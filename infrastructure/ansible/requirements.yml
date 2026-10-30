@@ -1,0 +1,7 @@
+---
+# Collections utilisées par le rôle K3s (modprobe, sysctl, ufw).
+collections:
+  - name: community.general
+    version: 8.3.0
+  - name: ansible.posix
+    version: 1.5.4

@@ -119,7 +119,9 @@ L'[état de reprise](docs/reprise.md) rassemble les décisions, les blocages et
 les prochaines étapes avant tout déploiement.
 
 Les playbooks K3s préparés et leurs verrous de déploiement sont décrits dans
-[docs/k3s-playbooks.md](docs/k3s-playbooks.md). Aucun déploiement K3s n'a été
+[docs/k3s-playbooks.md](docs/k3s-playbooks.md).
+La procédure d'installation sur la VM, avec ses commandes et son retour arrière,
+est dans [docs/install-k3s-vps.md](docs/install-k3s-vps.md). Aucun déploiement K3s n'a été
 effectué par Project OS ; l'installation annoncée par l'administrateur reste
 à inspecter.
 

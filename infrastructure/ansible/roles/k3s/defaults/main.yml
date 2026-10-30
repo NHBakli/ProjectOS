@@ -10,6 +10,11 @@ k3s_api_protection_evidence: ''
 k3s_flannel_backend: ''
 k3s_api_bind_address: ''
 
+# Plages internes K3s ; elles sont autorisées vers l'hôte dans UFW.
+k3s_cluster_cidr: 10.42.0.0/16
+k3s_service_cidr: 10.43.0.0/16
+k3s_manage_ufw_cluster_rules: true
+
 # Binaire amd64 publié par le projet K3s et contrôlé par SHA-256.
 k3s_version: v1.37.1+k3s1
 k3s_binary_sha256: 92b94582eb7b34a8cf532e6006842b9ed215a6783cf56a3dd6271fd35243b2c0

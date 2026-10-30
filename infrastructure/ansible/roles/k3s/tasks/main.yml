@@ -27,17 +27,6 @@
       - ansible_facts['architecture'] == 'x86_64'
     fail_msg: La version du binaire et le système cible doivent être revus.
 
-- name: Vérifier que le forwarding IPv4 est activé sans le modifier
-  ansible.builtin.command: cat /proc/sys/net/ipv4/ip_forward
-  register: k3s_ipv4_forward
-  changed_when: false
-
-- name: Refuser l'installation si le forwarding IPv4 reste désactivé
-  ansible.builtin.assert:
-    that:
-      - k3s_ipv4_forward.stdout | trim == '1'
-    fail_msg: Le forwarding IPv4 est désactivé ; aucune installation n'est lancée.
-
 - name: Vérifier si une unité K3s existe déjà
   ansible.builtin.stat:
     path: /etc/systemd/system/k3s.service
@@ -90,6 +79,60 @@
         k3s_unit_before.stat.exists or
         not (k3s_tcp_listeners.stdout is search('(?m):6443\\s'))
     fail_msg: TCP 6443 est déjà utilisé ; identifier le service avant de continuer.
+
+- name: Déclarer les modules noyau requis au démarrage
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/projectos-k3s.conf
+    content: |
+      # Managed by Project OS.
+      overlay
+      br_netfilter
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Charger les modules noyau requis
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: Activer le forwarding IPv4 et le filtrage des ponts de façon persistante
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: '1'
+    sysctl_file: /etc/sysctl.d/90-projectos-k3s.conf
+    sysctl_set: true
+    state: present
+    reload: true
+  loop:
+    - net.ipv4.ip_forward
+    - net.bridge.bridge-nf-call-iptables
+
+# UFW (AegisOps) refuse les entrées par défaut : sans ces règles, les Pods ne
+# joignent ni l'API ni le DNS de l'hôte. TCP 6443 n'est pas ouvert à Internet.
+- name: Autoriser les plages Pods et Services K3s vers l'hôte dans UFW
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ item }}"
+    comment: Project OS K3s
+  loop:
+    - "{{ k3s_cluster_cidr }}"
+    - "{{ k3s_service_cidr }}"
+  when: k3s_manage_ufw_cluster_rules | bool
+
+- name: Vérifier que le forwarding IPv4 est actif
+  ansible.builtin.command: cat /proc/sys/net/ipv4/ip_forward
+  register: k3s_ipv4_forward
+  changed_when: false
+
+- name: Refuser de démarrer K3s si le forwarding IPv4 reste désactivé
+  ansible.builtin.assert:
+    that:
+      - k3s_ipv4_forward.stdout | trim == '1'
+    fail_msg: Le forwarding IPv4 est désactivé ; aucune installation n'est lancée.
 
 - name: Créer le répertoire de configuration K3s
   ansible.builtin.file:

@@ -17,6 +17,11 @@ jobs:
           python-version: '3.12'
       - name: Install validation tools
         run: python -m pip install -r requirements-validation.txt
+      - name: Install Ansible collections
+        run: >-
+          ansible-galaxy collection install
+          -r infrastructure/ansible/requirements.yml
+          -p infrastructure/ansible/collections
       - name: Validate Phase 1
         run: bash scripts/validate.sh
       - name: Install Helm 3.22.1

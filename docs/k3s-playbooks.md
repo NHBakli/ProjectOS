@@ -32,6 +32,10 @@ n'est pas conçue. Le backend Flannel et l'adresse d'écoute de l'API doivent ê
 choisis explicitement après la validation réseau. Le simple fait de choisir
 `host-gw` ne garantit pas à lui seul le réseau des Pods.
 
+Sur la VM KVM, le rôle prépare aussi l'hôte : modules `overlay` et
+`br_netfilter`, sysctl `ip_forward`, et deux règles UFW pour les plages Pods et
+Services. Voir [la procédure opérateur](install-k3s-vps.md).
+
 ## Verrous avant installation
 
 Les variables suivantes valent `false` ou sont vides par défaut :

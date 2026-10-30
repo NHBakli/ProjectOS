@@ -2,6 +2,8 @@
 write-kubeconfig-mode: '0600'
 secrets-encryption: true
 bind-address: {{ k3s_api_bind_address | to_json }}
+cluster-cidr: {{ k3s_cluster_cidr | to_json }}
+service-cidr: {{ k3s_service_cidr | to_json }}
 flannel-backend: {{ k3s_flannel_backend | to_json }}
 disable:
   - traefik

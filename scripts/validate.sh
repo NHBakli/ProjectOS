@@ -11,6 +11,8 @@ export XDG_CACHE_HOME="${TMPDIR:-/tmp}/projectos-cache"
 
 yamllint -d '{extends: relaxed, rules: {line-length: {max: 120}}}' \
   .github/workflows/ci.yml infrastructure/ansible/inventories/production/hosts.example.yml \
+  infrastructure/ansible/inventories/production/k3s-approval.example.yml \
+  infrastructure/ansible/requirements.yml \
   infrastructure/ansible/playbooks/ infrastructure/ansible/roles/k3s/defaults/ \
   infrastructure/ansible/roles/k3s/tasks/ infrastructure/ansible/roles/k3s/handlers/ \
   infrastructure/kind/cluster.yaml kubernetes/smoke/ helm/

@@ -1,5 +1,6 @@
 .idea
 .ansible/
+infrastructure/ansible/collections/
 *.retry
 .env
 .env.*

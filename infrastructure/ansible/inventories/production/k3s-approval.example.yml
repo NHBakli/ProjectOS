@@ -1,0 +1,12 @@
+---
+# Copier hors du dépôt (ex. ~/.config/projectos/k3s-approval.yml) puis adapter.
+# Aucun secret ici ; l'adresse réelle ne doit pas être versionnée.
+k3s_install_approved: true
+k3s_host_compatibility_verified: true
+k3s_api_protection_verified: true
+k3s_api_protection_evidence: >-
+  UFW actif (INPUT DROP, seul TCP 22 autorisé) ; TCP 6443 expire depuis un
+  réseau externe (contrôle du 2026-10-30).
+k3s_flannel_backend: vxlan
+# IP de l'interface de la VM : les Pods doivent joindre l'API, 127.0.0.1 ne convient pas.
+k3s_api_bind_address: 192.0.2.10

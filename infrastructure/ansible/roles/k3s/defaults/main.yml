@@ -2,7 +2,7 @@
 # Ces verrous sont faux tant que la compatibilité et le filtrage ne sont pas prouvés.
 k3s_install_approved: false
 k3s_upgrade_approved: false
-k3s_lxc_compatibility_verified: false
+k3s_host_compatibility_verified: false
 k3s_api_protection_verified: false
 k3s_api_protection_evidence: ''
 

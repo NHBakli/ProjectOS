@@ -4,7 +4,7 @@
 
 Project OS est un projet d'infrastructure **Infrastructure as Code (IaC)** visant à déployer et exploiter, sur un cluster **K3s single-node**, une plateforme de gestion de projets reposant sur **Plane** et **n8n**. L'objectif est de disposer d'un environnement personnel, éventuellement partagé avec une petite équipe (environ 5 à 7 personnes), et de pratiquer Kubernetes, Helm, Ansible, GitOps, réseau, stockage, sauvegardes et observabilité.
 
-> **État au 2026-10-28 :** l'administrateur indique que Kubernetes est accessible et que le VPS a été sécurisé. Ce nouvel état n'a pas encore été vérifié depuis ce dépôt : la distribution du cluster, sa configuration, sa santé et la protection externe de TCP 6443 restent à contrôler en lecture seule. Plane et n8n ne sont pas confirmés déployés.
+> **État au 2026-10-30 :** le VPS a été migré d'un conteneur LXC vers une **VM KVM**, ce qui lève a priori les limites propres aux conteneurs (sysctls, modules, TUN). Le 2026-10-28, l'administrateur indiquait aussi que Kubernetes est accessible et que le VPS a été sécurisé. Ce nouvel état n'a pas encore été vérifié depuis ce dépôt : la distribution du cluster, sa configuration, sa santé et la protection externe de TCP 6443 restent à contrôler en lecture seule. Plane et n8n ne sont pas confirmés déployés.
 
 ## Objectifs
 
@@ -44,7 +44,7 @@ flowchart TD
 
 | Domaine | Choix | Notes |
 |---|---|---|
-| Orchestration | K3s | 1 nœud au départ ; compatibilité LXC à tester réellement |
+| Orchestration | K3s | 1 nœud au départ ; VM KVM, compatibilité à tester réellement |
 | Provisionnement | Ansible | Installation et configuration de K3s à partir de l'IDE |
 | Déploiement applicatif | Helm | Charts officiels ou maintenus, versions épinglées |
 | Gestion de projets | Plane Community Edition | Chart officiel `plane-ce` retenu pour la V1 ; compatibilité réelle à valider avant installation |
@@ -59,7 +59,7 @@ flowchart TD
 | Ressource | Observation |
 |---|---|
 | OS | Ubuntu 22.04 |
-| Hébergement | Conteneur LXC sur noyau Proxmox (`7.0.2-6-pve`) |
+| Hébergement | **VM KVM** depuis le 2026-10-30 (auparavant conteneur LXC, noyau Proxmox `7.0.2-6-pve`) |
 | CPU | 9 vCPU visibles |
 | RAM | 12 Gio |
 | Disque | Environ 137 Go, dont ~129 Go libres au diagnostic |
@@ -69,7 +69,7 @@ flowchart TD
 | TUN | `/dev/net/tun` absent |
 | Namespaces réseau | Test `sudo unshare --net -- ip -br link` réussi |
 
-**Ces résultats sont des prérequis partiels, pas une certification de compatibilité K3s.** Les tests containerd, CNI, Pods, DNS et PVC doivent encore être effectués. Le mode réseau de Flannel (`vxlan`, `host-gw` ou autre) sera retenu après essais contrôlés : ne pas le considérer comme acquis.
+**Hormis la ligne Hébergement, ces relevés viennent de l'ancien LXC (2026-10-26) et doivent être refaits sur la VM KVM. Ce sont des prérequis partiels, pas une certification de compatibilité K3s.** Les tests containerd, CNI, Pods, DNS et PVC doivent encore être effectués. Le mode réseau de Flannel (`vxlan`, `host-gw` ou autre) sera retenu après essais contrôlés : ne pas le considérer comme acquis.
 
 ## Séparation des responsabilités
 
@@ -128,7 +128,7 @@ sont épinglées dans [helm/charts.lock.yaml](helm/charts.lock.yaml).
 Les contrats de Secrets et le plan de restauration sont dans
 [docs/secrets.md](docs/secrets.md) et [docs/recovery.md](docs/recovery.md).
 
-- [ ] **1 — Socle IaC :** dépôt, conventions, inventory exemple, validation de syntaxe, tests de compatibilité LXC en lecture seule.
+- [ ] **1 — Socle IaC :** dépôt, conventions, inventory exemple, validation de syntaxe, tests de compatibilité de l'hôte en lecture seule.
 - [ ] **2 — K3s :** installation contrôlée et reproductible ; API Kubernetes non exposée publiquement ; tests du nœud, DNS, réseau des Pods, stockage et redémarrage.
 - [ ] **3 — Accès / stockage :** Ingress, DNS/TLS, StorageClass/PVC, Secrets, sauvegarde et restauration minimale.
 - [ ] **4 — Plane :** installer le chart Community Edition retenu ; valider UI, API, workers et persistance.
@@ -171,4 +171,4 @@ Une V1 est livrable lorsque K3s est sain, que Plane et n8n fonctionnent sous HTT
 
 ## État actuel
 
-**Phase active :** audit en lecture seule du cluster signalé comme accessible, puis validation réseau, DNS, stockage et sauvegardes avant tout déploiement applicatif. Les relevés LXC du 2026-10-26 décrivent l'ancien état observé et doivent être renouvelés.
+**Phase active :** audit en lecture seule du cluster signalé comme accessible, puis validation réseau, DNS, stockage et sauvegardes avant tout déploiement applicatif. Le VPS est passé de LXC à une VM KVM le 2026-10-30 : les relevés du 2026-10-26 décrivent l'ancien hôte et le précheck doit être relancé.

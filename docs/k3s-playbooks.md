@@ -1,9 +1,11 @@
 # Playbooks K3s — préparation, installation, vérification
 
-Ces playbooks sont préparés localement. **L'installation sur le LXC est bloquée**
-par le dernier précheck (`ip_forward=0`, `/proc/sys` en lecture seule) et par
-l'absence de preuve du filtrage de TCP 6443. Ne pas lancer l'installation avant
-la réponse du fournisseur, un plan de retour arrière et un accès de secours.
+Ces playbooks sont préparés localement. Le VPS est passé de LXC à une **VM KVM**
+le 2026-10-30 : le blocage du dernier précheck (`ip_forward=0`, `/proc/sys` en
+lecture seule, relevés sur le LXC) doit être réévalué en relançant le précheck.
+**L'installation reste bloquée** tant que le filtrage de TCP 6443 n'est pas
+prouvé, qu'un éventuel cluster existant n'est pas identifié et qu'un plan de
+retour arrière et un accès de secours ne sont pas confirmés.
 
 ## Fichiers et choix
 
@@ -28,7 +30,7 @@ kubeconfig K3s est demandé en mode `0600`. Le chiffrement des Secrets au repos
 est activé. Traefik et ServiceLB sont désactivés tant que l'exposition HTTPS
 n'est pas conçue. Le backend Flannel et l'adresse d'écoute de l'API doivent être
 choisis explicitement après la validation réseau. Le simple fait de choisir
-`host-gw` ne résout pas automatiquement les limites LXC.
+`host-gw` ne garantit pas à lui seul le réseau des Pods.
 
 ## Verrous avant installation
 
@@ -37,7 +39,7 @@ Les variables suivantes valent `false` ou sont vides par défaut :
 | Variable | Preuve attendue |
 |---|---|
 | `k3s_install_approved` | Autorisation d'appliquer les changements sur le VPS. |
-| `k3s_lxc_compatibility_verified` | Réponse fournisseur et prérequis LXC vérifiés avant l'essai K3s. |
+| `k3s_host_compatibility_verified` | Précheck relancé sur la VM KVM et prérequis de l'hôte vérifiés avant l'essai K3s. |
 | `k3s_api_protection_verified` | Règle de filtrage active et vérifiée avant le démarrage de K3s. |
 | `k3s_api_protection_evidence` | Note non secrète sur la règle et sa vérification. |
 | `k3s_flannel_backend` | Choix validé parmi `vxlan`, `host-gw`, `wireguard-native`. |
@@ -96,7 +98,7 @@ ne constitue pas une sauvegarde des données K3s.
 
 ## Vérifications et retour arrière
 
-Après installation, vérifier l'API depuis le LXC et depuis un réseau externe,
+Après installation, vérifier l'API depuis la VM et depuis un réseau externe,
 le nœud `Ready`, CoreDNS, le trafic inter-Pods, les PVC et un redémarrage.
 Les essais de trafic et de PVC créent des ressources temporaires : ils seront
 exécutés comme étape distincte et approuvée. Le smoke test vérifie la résolution

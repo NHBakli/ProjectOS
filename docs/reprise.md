@@ -1,5 +1,28 @@
 # Reprise du travail — 2026-10-26
 
+## Mise à jour du 2026-10-30 — passage en VM KVM
+
+Le VPS a été migré d'un conteneur LXC vers une **VM KVM** (information de
+l'administrateur, pas encore vérifiée depuis ce dépôt). Dans une VM, le noyau
+appartient à l'invité : `net.ipv4.ip_forward`, les modules `overlay`,
+`br_netfilter` et `vxlan`, ainsi que `/dev/net/tun`, relèvent de la
+configuration de la VM et non plus des limites du conteneur. Le verdict
+`BLOCKED` du 2026-10-26 (`ip_forward=0`, `/proc/sys` en lecture seule) est donc
+**probablement levé, mais non démontré**.
+
+Conséquences :
+
+- Relancer `prerequisites.yml` sur la VM et remplacer le relevé de phase 1.
+  Le précheck affiche désormais le type de virtualisation détecté.
+- Re-mesurer noyau, CPU, RAM et disque : les ressources ont pu changer.
+- Établir si le cluster annoncé le 2026-10-28 existe encore sur la nouvelle VM,
+  et sous quelle forme, avant d'utiliser `install-k3s.yml`.
+- Prouver à nouveau le filtrage externe de TCP 6443 : la migration a pu changer
+  l'adresse, les règles du fournisseur ou celles d'AegisOps.
+- `ip_forward=0` est la valeur par défaut d'Ubuntu. Le rôle K3s exige `1` avant
+  l'installation ; activer ce sysctl sera une étape distincte, versionnée et
+  approuvée.
+
 ## Mise à jour du 2026-10-28
 
 L'administrateur indique que Kubernetes est maintenant accessible et que le

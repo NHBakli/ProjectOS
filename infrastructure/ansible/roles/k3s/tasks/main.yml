@@ -3,7 +3,7 @@
   ansible.builtin.assert:
     that:
       - k3s_install_approved | bool
-      - k3s_lxc_compatibility_verified | bool
+      - k3s_host_compatibility_verified | bool
       - k3s_api_protection_verified | bool
       - k3s_api_protection_evidence | length >= 20
       - k3s_flannel_backend in ['vxlan', 'host-gw', 'wireguard-native']
@@ -11,7 +11,7 @@
       - k3s_api_bind_address not in ['0.0.0.0', '::']
       - k3s_binary_sha256 is match('^[a-f0-9]{64}$')
     fail_msg: >-
-      Installation refusée : renseigner les validations LXC/réseau, la preuve du
+      Installation refusée : renseigner les validations hôte/réseau, la preuve du
       filtrage de TCP 6443, le backend Flannel et l'adresse d'écoute de l'API.
 
 - name: Recueillir les faits minimaux de l'hôte

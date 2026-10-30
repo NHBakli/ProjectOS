@@ -8,8 +8,10 @@
 - [x] Écrire un précheck K3s en lecture seule et documenter son verdict.
 - [x] Ajouter une validation statique locale.
 - [x] Exécuter le précheck sur le LXC cible et archiver un résumé expurgé.
-- [ ] Établir comment TCP 6443 est filtré depuis Internet, côté LXC, hôte et fournisseur.
-- [ ] Valider avec l'administrateur Proxmox les ajustements minimaux nécessaires, si le précheck bloque.
+- [ ] Établir comment TCP 6443 est filtré depuis Internet, côté VM, hôte et fournisseur.
+- [x] ~~Valider avec l'administrateur Proxmox les ajustements LXC nécessaires.~~
+  Remplacé : le VPS est une VM KVM depuis le 2026-10-30.
+- [ ] Relancer le précheck sur la VM KVM et remplacer le relevé ci-dessous.
 
 ## Exécution
 
@@ -49,7 +51,11 @@ pourra monter overlay. Le résultat de `ss` n'établit pas l'accessibilité depu
 Internet. Une valeur `ip_forward=0` bloque la préparation tant qu'une solution
 contrôlée n'est pas décidée ; le playbook ne modifie aucun sysctl.
 
-## Incertitudes LXC à lever
+## Incertitudes LXC à lever (historique)
+
+*Le VPS est une VM KVM depuis le 2026-10-30 : les limites propres au conteneur
+ne s'appliquent plus. Le fonctionnement de containerd, du CNI, du DNS et des PVC
+reste à prouver.*
 
 Le comportement réel de containerd, des montages overlay, de Flannel, du DNS
 interne et des PVC n'est pas prouvé. La visibilité des modules `vxlan` et
@@ -58,7 +64,10 @@ Si une adaptation Proxmox ou fournisseur est nécessaire, documenter le changeme
 minimal, son impact réseau et son retour arrière avant intervention. Ne pas
 convertir le conteneur en mode privilégié ni désactiver son confinement par défaut.
 
-## Résultat sur le LXC cible — 2026-10-26
+## Résultat sur le LXC cible — 2026-10-26 (historique)
+
+*Relevé de l'ancien conteneur LXC : il ne vaut plus pour la VM KVM et doit être
+refait.*
 
 Le playbook a terminé avec 11 tâches `ok`, 0 tâche modifiée et 0 erreur.
 Verdict : **`BLOCKED`** pour l'installation de K3s dans l'état observé.

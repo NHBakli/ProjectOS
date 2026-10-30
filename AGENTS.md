@@ -11,7 +11,8 @@ Lis `README.md` et inspecte le dépôt avant de commencer. Le README décrit l'i
 ## Contexte confirmé
 
 - **AegisOps est un projet distinct, déjà utilisé pour préparer et durcir le VPS.** Ne pas recréer le hardening de l'hôte, changer les comptes ou réécrire la configuration SSH.
-- Hôte cible : Ubuntu 22.04 dans **LXC / Proxmox**, noyau visible `7.0.2-6-pve`.
+- Hôte cible : Ubuntu 22.04, **migré d'un conteneur LXC vers une VM KVM** (annoncé par l'administrateur le 2026-10-30, non encore vérifié depuis ce dépôt). Dans une VM, sysctls, modules noyau et `/dev/net/tun` ne sont plus limités par le confinement du conteneur, mais doivent être re-mesurés.
+- *Relevés historiques sur l'ancien LXC (2026-10-26), à refaire sur la VM KVM :*
 - Ressources observées : 9 vCPU, 12 Gio de RAM, ~129 Go disponibles lors des derniers diagnostics.
 - VPS avec **IPv4 publique** ; compte non-root administrateur `aegisadmin` avec sudo. Ne jamais codifier l'IP publique, l'alias SSH ou des identifiants réels dans des fichiers suivis par Git.
 - cgroups v2 accessibles, ext4 et OverlayFS détectés, systemd fonctionne ; `unshare --net` a réussi ; `iptables -L` a fonctionné.
@@ -100,7 +101,7 @@ Avant de qualifier une modification de terminée :
 - `helm template` et `helm lint` passés sur les charts/values retenus lorsque Helm est utilisé.
 - Aucune fuite de secrets dans les diffs ou le dépôt.
 - Idempotence testée pour les rôles modifiant l'hôte (deux exécutions contrôlées, seconde sans modification inattendue).
-- Tests réels sur LXC/K3s signalés comme **non effectués** tant qu'ils n'ont pas été exécutés.
+- Tests réels sur le VPS/K3s signalés comme **non effectués** tant qu'ils n'ont pas été exécutés.
 - Déploiement et retour arrière documentés ; persistance et restauration vérifiées avant usage en production.
 
 ## Format des réponses Codex

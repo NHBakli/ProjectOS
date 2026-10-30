@@ -57,6 +57,12 @@
       changed_when: false
       failed_when: false
 
+    - name: Lire le type de virtualisation détecté
+      ansible.builtin.raw: systemd-detect-virt
+      register: virt_type
+      changed_when: false
+      failed_when: false
+
     - name: Calculer le verdict préliminaire
       ansible.builtin.set_fact:
         k3s_precheck_blocked: >-
@@ -81,6 +87,7 @@
       ansible.builtin.debug:
         msg:
           status: "{{ 'BLOCKED' if k3s_precheck_blocked else 'NEEDS_VALIDATION' }}"
+          virtualization: "{{ virt_type.stdout | trim if virt_type.stdout | trim | length > 0 else 'unavailable' }}"
           systemd_pid_1: "{{ pid_one.rc == 0 and pid_one.stdout | trim == 'systemd' }}"
           cgroups_v2_cpu_memory: >-
             {{ cgroups.rc == 0 and 'cpu' in cgroups.stdout.split()

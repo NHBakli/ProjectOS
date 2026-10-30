@@ -1,5 +1,15 @@
 # Reprise du travail — 2026-10-26
 
+## 2026-10-31 — Redémarrage et Ingress
+
+Après redémarrage de la VM, K3s, les modules et le sysctl sont revenus seuls ;
+`verify-k3s.yml` réussit. Le rôle a ensuite activé Traefik 3.7.13 et ServiceLB
+de K3s et ouvert 80/443 dans UFW (`changed=3`). Depuis l'extérieur : 22, 80
+et 443 répondent (HTTP 404 sans route, attendu) ; 6443 et 10250 expirent.
+Les NodePorts automatiques de Traefik répondaient aussi depuis Internet
+(contournement d'UFW par DNAT) : le rôle les limite désormais à `127.0.0.1`,
+**à appliquer et revérifier**. Domaine et TLS restent à choisir.
+
 ## 2026-10-31 — K3s installé sur la VM KVM
 
 `install-k3s.yml` a terminé sans erreur (`changed=9`) : modules `overlay` et

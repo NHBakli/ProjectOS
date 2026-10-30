@@ -123,9 +123,12 @@ le committer ni le partager.
 Traefik reçoit le trafic des ports 80/443 via ServiceLB (`svclb-traefik`).
 Ces ports sont publiés par DNAT dans iptables : le trafic passe par la chaîne
 FORWARD et **contourne les règles INPUT d'UFW**. Il en va de même pour tout
-Service `NodePort` ou `hostPort`. Règle du projet : n'exposer que Traefik ;
-aucun Service `NodePort`, `LoadBalancer` ou `hostPort` supplémentaire sans
-revue. Contrôler régulièrement depuis l'extérieur que seuls 22, 80 et 443
+Service `NodePort` ou `hostPort`. Constat du 2026-10-31 : les NodePorts
+automatiques du Service Traefik répondaient depuis Internet. Le rôle limite
+donc les NodePorts à `127.0.0.1` (`kube-proxy-arg: nodeport-addresses`) ;
+ServiceLB transmet à la ClusterIP de Traefik et n'en dépend pas. Règle du
+projet : n'exposer que Traefik ; aucun Service `LoadBalancer` ou `hostPort`
+supplémentaire sans revue. Contrôler régulièrement depuis l'extérieur que seuls 22, 80 et 443
 répondent.
 
 Pour appliquer le changement sur un K3s déjà installé, relancer la commande de

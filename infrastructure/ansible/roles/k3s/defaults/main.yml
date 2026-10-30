@@ -21,6 +21,9 @@ k3s_enable_ingress: true
 k3s_ufw_ingress_ports:
   - '80'
   - '443'
+# Les NodePorts sont publiés par DNAT et contournent UFW : les limiter à
+# localhost. ServiceLB vise la ClusterIP de Traefik et n'en dépend pas.
+k3s_nodeport_addresses: 127.0.0.1/32
 
 # Binaire amd64 publié par le projet K3s et contrôlé par SHA-256.
 k3s_version: v1.37.1+k3s1

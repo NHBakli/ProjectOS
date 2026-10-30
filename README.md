@@ -4,7 +4,7 @@
 
 Project OS est un projet d'infrastructure **Infrastructure as Code (IaC)** visant à déployer et exploiter, sur un cluster **K3s single-node**, une plateforme de gestion de projets reposant sur **Plane** et **n8n**. L'objectif est de disposer d'un environnement personnel, éventuellement partagé avec une petite équipe (environ 5 à 7 personnes), et de pratiquer Kubernetes, Helm, Ansible, GitOps, réseau, stockage, sauvegardes et observabilité.
 
-> **État au 2026-10-31 :** **K3s `v1.37.1+k3s1` est installé** par le rôle Ansible sur la VM KVM (Ubuntu 24.04.5). Nœud `Ready`, Pods système sains, StorageClass `local-path`. TCP 6443 et 10250 restent filtrés depuis Internet alors que K3s écoute. Restent à faire : idempotence, smoke test (DNS, trafic inter-Pods, PVC), redémarrage, puis Ingress/TLS. Plane et n8n ne sont pas déployés.
+> **État au 2026-10-31 :** **K3s `v1.37.1+k3s1` est installé** par le rôle Ansible sur la VM KVM (Ubuntu 24.04.5). Nœud `Ready`, Pods système sains, StorageClass `local-path`. TCP 6443 et 10250 restent filtrés depuis Internet alors que K3s écoute. Smoke test réussi (DNS, trafic inter-Pods, PVC, sortie Internet des Pods). Restent à faire : idempotence, redémarrage, sauvegarde K3s, puis Ingress/TLS. Plane et n8n ne sont pas déployés.
 
 ## Objectifs
 

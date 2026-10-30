@@ -13,8 +13,16 @@ Corrections apportées à `verify-k3s.yml` : attente de l'état `Ready` (le nœu
 met une à deux minutes à s'enregistrer) et lecture de la clé JSON `['items']`
 au lieu de `.items`, que Jinja résout comme la méthode `dict.items`.
 
-**Non effectués :** seconde exécution (idempotence), smoke test DNS/trafic/PVC,
-redémarrage de la VM, sauvegarde du token et du datastore.
+`smoke-k3s.yml` a réussi (`ok=15`, `failed=0`) : DNS interne, HTTP entre Pods
+via un Service, marqueur sur PVC `local-path` relu après redémarrage du Pod.
+Depuis un Pod, la résolution DNS externe et le HTTP sortant fonctionnent : la
+politique UFW `FORWARD DROP` ne bloque pas le trafic des Pods (règles Flannel).
+Le namespace `projectos-smoke` est laissé en place pour inspection. Correction :
+dans une liste YAML, `- -` est une liste imbriquée contenant `null` ; l'argument
+stdin de kubectl doit être écrit `'-'`.
+
+**Non effectués :** seconde exécution du rôle (idempotence), redémarrage de la
+VM, sauvegarde du token et du datastore, restauration.
 
 ## Relevé du 2026-10-30 — VM KVM vérifiée
 

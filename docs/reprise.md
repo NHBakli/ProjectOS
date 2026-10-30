@@ -1,5 +1,21 @@
 # Reprise du travail — 2026-10-26
 
+## 2026-10-31 — K3s installé sur la VM KVM
+
+`install-k3s.yml` a terminé sans erreur (`changed=9`) : modules `overlay` et
+`br_netfilter`, sysctl `ip_forward`, deux règles UFW (10.42/16, 10.43/16),
+binaire `v1.37.1+k3s1`, configuration et unité systemd. `verify-k3s.yml` : nœud
+`Ready`, coredns, local-path-provisioner et metrics-server `Running`,
+StorageClass `local-path`. Depuis un réseau externe, TCP 6443 et 10250
+expirent alors que K3s y écoute : le filtrage côté hôte est démontré.
+
+Corrections apportées à `verify-k3s.yml` : attente de l'état `Ready` (le nœud
+met une à deux minutes à s'enregistrer) et lecture de la clé JSON `['items']`
+au lieu de `.items`, que Jinja résout comme la méthode `dict.items`.
+
+**Non effectués :** seconde exécution (idempotence), smoke test DNS/trafic/PVC,
+redémarrage de la VM, sauvegarde du token et du datastore.
+
 ## Relevé du 2026-10-30 — VM KVM vérifiée
 
 Précheck et audit exécutés en lecture seule : VM `kvm`, Ubuntu 24.04.5, aucun

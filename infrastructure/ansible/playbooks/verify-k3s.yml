@@ -11,6 +11,15 @@
       ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes -o json
       register: k3s_nodes_json
       changed_when: false
+      # Juste après le démarrage, le nœud met une à deux minutes à s'enregistrer.
+      until: >-
+        k3s_nodes_json.rc == 0 and
+        (k3s_nodes_json.stdout | from_json)['items'] |
+        map(attribute='status.conditions') | flatten |
+        selectattr('type', 'equalto', 'Ready') |
+        selectattr('status', 'equalto', 'True') | list | length == 1
+      retries: 18
+      delay: 10
 
     - name: Lire l'état des Pods système
       ansible.builtin.command: /usr/local/bin/k3s kubectl get pods -n kube-system -o json
@@ -24,9 +33,9 @@
 
     - name: Préparer le résumé de santé sans noms ni adresses
       ansible.builtin.set_fact:
-        k3s_nodes: "{{ (k3s_nodes_json.stdout | from_json).items }}"
-        k3s_system_pods: "{{ (k3s_system_pods_json.stdout | from_json).items }}"
-        k3s_storage_classes: "{{ (k3s_storage_classes_json.stdout | from_json).items }}"
+        k3s_nodes: "{{ (k3s_nodes_json.stdout | from_json)['items'] }}"
+        k3s_system_pods: "{{ (k3s_system_pods_json.stdout | from_json)['items'] }}"
+        k3s_storage_classes: "{{ (k3s_storage_classes_json.stdout | from_json)['items'] }}"
 
     - name: Vérifier que le nœud unique est Ready
       ansible.builtin.assert:

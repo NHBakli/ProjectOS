@@ -24,7 +24,10 @@ Namespace `n8n`, Secret `n8n-secrets` :
 
 ## Plane Community Edition
 
-Namespace `plane`. Les noms suivent `helm/plane-ce-values.example.yaml` :
+Namespace `plane`. Les noms suivent `helm/plane-ce-values.yaml`. Les valeurs
+sont générées par `scripts/generate-plane-secrets.sh` dans un fichier Ansible
+Vault privé, puis `deploy-plane.yml` crée ces Secrets (server-side apply, sous
+`no_log`). Voir [plane.md](plane.md).
 
 | Secret | Clés requises par les workloads |
 |---|---|

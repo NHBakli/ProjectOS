@@ -1,5 +1,7 @@
 ---
-# Candidat Community Edition ; domaine, PVC et Secrets à confirmer.
+# Valeurs Plane Community Edition pour la VM single-node. Aucun secret ni nom
+# d'hôte réel : ingress.appHost est injecté par deploy-plane.yml depuis le
+# fichier privé (projectos_base_domain), les Secrets sont créés à part.
 planeVersion: v1.4.2
 
 ingress:
@@ -9,6 +11,7 @@ ingress:
   rabbitmqHost: ''
   ingressClass: traefik
 
+# Certificat fourni par cert-manager (Certificate plane-tls, letsencrypt-prod).
 ssl:
   tls_secret_name: plane-tls
   createIssuer: false
@@ -29,6 +32,23 @@ rabbitmq:
 minio:
   storageClass: local-path
   volumeSize: 10Gi
+  init_image: busybox:1.36.1
+
+# Images épinglées par planeVersion : inutile de les retélécharger à chaque démarrage.
+web:
+  pullPolicy: IfNotPresent
+space:
+  pullPolicy: IfNotPresent
+admin:
+  pullPolicy: IfNotPresent
+live:
+  pullPolicy: IfNotPresent
+api:
+  pullPolicy: IfNotPresent
+worker:
+  pullPolicy: IfNotPresent
+beatworker:
+  pullPolicy: IfNotPresent
 
 env:
   requireExplicitSecrets: true

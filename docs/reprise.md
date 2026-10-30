@@ -1,5 +1,13 @@
 # Reprise du travail — 2026-10-26
 
+## 2026-10-31 — Plane préparé
+
+Namespace de test supprimé par l'opérateur. Déploiement Plane CE préparé :
+valeurs réelles `helm/plane-ce-values.yaml` (rendu vérifié : aucun Secret
+généré, six Secrets externes, TLS `plane-tls`, PVC `local-path`), génération
+des secrets dans Ansible Vault, playbook `deploy-plane.yml`. Voir
+[plane.md](plane.md). **Non encore déployé.**
+
 ## 2026-10-31 — NodePorts fermés, DNS et TLS
 
 NodePorts limités à `127.0.0.1` et appliqués : depuis l'extérieur, 31750 et

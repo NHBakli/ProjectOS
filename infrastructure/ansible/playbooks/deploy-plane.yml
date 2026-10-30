@@ -1,0 +1,224 @@
+---
+- name: Déployer Plane Community Edition
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  vars:
+    plane_namespace: plane
+    plane_release: plane-app
+    plane_host: "plane.{{ projectos_base_domain }}"
+    plane_chart_version: 1.8.5
+    plane_values: >-
+      {{ lookup('ansible.builtin.file', playbook_dir ~ '/../../../helm/plane-ce-values.yaml')
+         | from_yaml
+         | combine({'ingress': {'appHost': plane_host}}, recursive=True) }}
+    plane_svc_suffix: "{{ plane_namespace }}.svc.cluster.local"
+    plane_secrets:
+      plane-app-keys:
+        SECRET_KEY: "{{ plane_secret_key }}"
+        LIVE_SERVER_SECRET_KEY: "{{ plane_live_server_secret_key }}"
+      plane-app-env:
+        REDIS_URL: "redis://{{ plane_release }}-redis.{{ plane_svc_suffix }}:6379/"
+        DATABASE_URL: >-
+          postgresql://plane:{{ plane_postgres_password }}@{{ plane_release }}-pgdb.{{ plane_svc_suffix }}/plane
+        AMQP_URL: "amqp://plane:{{ plane_rabbitmq_password }}@{{ plane_release }}-rabbitmq.{{ plane_svc_suffix }}/"
+      plane-live-env:
+        REDIS_URL: "redis://{{ plane_release }}-redis.{{ plane_svc_suffix }}:6379/"
+      plane-postgres:
+        POSTGRES_USER: plane
+        POSTGRES_PASSWORD: "{{ plane_postgres_password }}"
+        POSTGRES_DB: plane
+      plane-rabbitmq:
+        RABBITMQ_DEFAULT_USER: plane
+        RABBITMQ_DEFAULT_PASS: "{{ plane_rabbitmq_password }}"
+      plane-doc-store:
+        FILE_SIZE_LIMIT: '5242880'
+        AWS_S3_BUCKET_NAME: uploads
+        USE_MINIO: '1'
+        MINIO_ROOT_USER: plane-storage
+        MINIO_ROOT_PASSWORD: "{{ plane_minio_password }}"
+        AWS_ACCESS_KEY_ID: plane-storage
+        AWS_SECRET_ACCESS_KEY: "{{ plane_minio_password }}"
+        AWS_S3_ENDPOINT_URL: "http://{{ plane_release }}-minio:9000"
+  tasks:
+    - name: Exiger l'autorisation, le domaine et les secrets chiffrés
+      ansible.builtin.assert:
+        that:
+          - plane_deploy_approved | default(false) | bool
+          - projectos_base_domain | default('') | length > 0
+          - plane_secret_key | default('') | length >= 50
+          - plane_live_server_secret_key | default('') | length >= 32
+          - plane_postgres_password | default('') | length >= 32
+          - plane_rabbitmq_password | default('') | length >= 32
+          - plane_minio_password | default('') | length >= 32
+        fail_msg: >-
+          Fournir plane_deploy_approved=true, platform.yml et le fichier Vault
+          généré par scripts/generate-plane-secrets.sh.
+
+    - name: Créer le namespace Plane
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, apply, -f, '-']
+        stdin: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: {{ plane_namespace }}
+            labels:
+              app.kubernetes.io/part-of: project-os
+      register: plane_ns_apply
+      changed_when: "'created' in plane_ns_apply.stdout or 'configured' in plane_ns_apply.stdout"
+
+    # kubectl diff renvoie 1 s'il y a une différence ; il masque les valeurs des Secrets.
+    - name: Comparer les Secrets Plane attendus à l'existant
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, diff, --server-side, --field-manager=projectos, -f, '-']
+        stdin: |
+          {% for name, data in plane_secrets.items() %}
+          ---
+          {{ {'apiVersion': 'v1', 'kind': 'Secret', 'type': 'Opaque',
+              'metadata': {'name': name, 'namespace': plane_namespace},
+              'stringData': data} | to_nice_yaml }}
+          {% endfor %}
+      register: plane_secrets_diff
+      changed_when: false
+      failed_when: plane_secrets_diff.rc > 1
+      no_log: true
+
+    # Server-side apply : pas d'annotation last-applied contenant les valeurs.
+    - name: Créer ou mettre à jour les Secrets Plane sans les afficher
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, apply, --server-side, --field-manager=projectos, -f, '-']
+        stdin: |
+          {% for name, data in plane_secrets.items() %}
+          ---
+          {{ {'apiVersion': 'v1', 'kind': 'Secret', 'type': 'Opaque',
+              'metadata': {'name': name, 'namespace': plane_namespace},
+              'stringData': data} | to_nice_yaml }}
+          {% endfor %}
+      when: plane_secrets_diff.rc == 1
+      changed_when: true
+      no_log: true
+
+    - name: Demander le certificat Let's Encrypt de production
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, apply, -f, '-']
+        stdin: |
+          apiVersion: cert-manager.io/v1
+          kind: Certificate
+          metadata:
+            name: plane-tls
+            namespace: {{ plane_namespace }}
+          spec:
+            secretName: plane-tls
+            dnsNames:
+              - {{ plane_host }}
+            issuerRef:
+              kind: ClusterIssuer
+              name: letsencrypt-prod
+      register: plane_cert_apply
+      changed_when: "'created' in plane_cert_apply.stdout or 'configured' in plane_cert_apply.stdout"
+
+    - name: Attendre le certificat (défi HTTP-01)
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, wait, -n, "{{ plane_namespace }}",
+               --for=condition=Ready, certificate/plane-tls, --timeout=300s]
+      changed_when: false
+
+    # Le chart ne publie Plane que sur websecure : rediriger HTTP vers HTTPS.
+    # Le défi ACME (règle plus longue, donc prioritaire) reste servi en HTTP.
+    - name: Rediriger HTTP vers HTTPS pour Plane
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, apply, -f, '-']
+        stdin: |
+          apiVersion: traefik.io/v1alpha1
+          kind: Middleware
+          metadata:
+            name: redirect-https
+            namespace: {{ plane_namespace }}
+          spec:
+            redirectScheme:
+              scheme: https
+              permanent: true
+          ---
+          apiVersion: traefik.io/v1alpha1
+          kind: IngressRoute
+          metadata:
+            name: plane-http-redirect
+            namespace: {{ plane_namespace }}
+          spec:
+            entryPoints:
+              - web
+            routes:
+              - match: Host(`{{ plane_host }}`)
+                kind: Rule
+                middlewares:
+                  - name: redirect-https
+                services:
+                  - name: noop@internal
+                    kind: TraefikService
+      register: plane_redirect_apply
+      changed_when: "'created' in plane_redirect_apply.stdout or 'configured' in plane_redirect_apply.stdout"
+
+    - name: Appliquer le HelmChart Plane (contrôleur Helm de K3s)
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, apply, -f, '-']
+        stdin: |
+          {{ {'apiVersion': 'helm.cattle.io/v1', 'kind': 'HelmChart',
+              'metadata': {'name': plane_release, 'namespace': 'kube-system',
+                           'labels': {'app.kubernetes.io/part-of': 'project-os'}},
+              'spec': {'repo': 'https://helm.plane.so/', 'chart': 'plane-ce',
+                       'version': plane_chart_version | string,
+                       'targetNamespace': plane_namespace,
+                       'valuesContent': plane_values | to_nice_yaml}} | to_nice_yaml }}
+      register: plane_chart_apply
+      changed_when: "'created' in plane_chart_apply.stdout or 'configured' in plane_chart_apply.stdout"
+
+    - name: Attendre la fin de l'installation Helm
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, wait, -n, kube-system,
+               --for=condition=complete, "job/helm-install-{{ plane_release }}", --timeout=60s]
+      register: plane_helm_job
+      until: plane_helm_job.rc == 0
+      retries: 15
+      delay: 10
+      changed_when: false
+
+    - name: Attendre les bases et services de données
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, rollout, status, -n, "{{ plane_namespace }}",
+               "statefulset/{{ plane_release }}-{{ item }}-wl", --timeout=600s]
+      loop: [pgdb, redis, rabbitmq, minio]
+      changed_when: false
+
+    - name: Attendre les migrations et la création du bucket
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, wait, -n, "{{ plane_namespace }}",
+               --for=condition=complete, job, --all, --timeout=900s]
+      changed_when: false
+
+    - name: Attendre les composants applicatifs
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, wait, -n, "{{ plane_namespace }}",
+               --for=condition=Available, deployment, --all, --timeout=900s]
+      changed_when: false
+
+    - name: Vérifier l'interface et l'API en HTTPS avec certificat valide
+      ansible.builtin.uri:
+        url: "https://{{ plane_host }}{{ item }}"
+        status_code: 200
+      loop:
+        - /
+        - /api/instances/
+      register: plane_http
+      until: plane_http.status == 200
+      retries: 12
+      delay: 10
+      delegate_to: localhost
+      become: false
+
+    - name: Résumer le déploiement
+      ansible.builtin.debug:
+        msg: >-
+          Plane répond en HTTPS (certificat Let's Encrypt valide). Créer
+          immédiatement le compte administrateur de l'instance sur /god-mode/ :
+          la première personne qui y accède en prend le contrôle.

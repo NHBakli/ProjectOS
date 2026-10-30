@@ -122,7 +122,8 @@ Les playbooks K3s préparés et leurs verrous de déploiement sont décrits dans
 [docs/k3s-playbooks.md](docs/k3s-playbooks.md).
 La procédure d'installation sur la VM, avec ses commandes et son retour arrière,
 est dans [docs/install-k3s-vps.md](docs/install-k3s-vps.md).
-Le choix DNS provisoire (sslip.io) et cert-manager sont décrits dans [docs/tls.md](docs/tls.md). Aucun déploiement K3s n'a été
+Le choix DNS provisoire (sslip.io) et cert-manager sont décrits dans [docs/tls.md](docs/tls.md),
+le déploiement de Plane dans [docs/plane.md](docs/plane.md). Aucun déploiement K3s n'a été
 effectué par Project OS ; l'installation annoncée par l'administrateur reste
 à inspecter.
 

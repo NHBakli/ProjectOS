@@ -41,7 +41,7 @@ printf '%s\n' \
   | sha256sum --check --status
 
 "$helm_bin" lint "$n8n_chart" -f helm/n8n-values.example.yaml
-"$helm_bin" lint "$plane_ce_chart" -f helm/plane-ce-values.example.yaml
+"$helm_bin" lint "$plane_ce_chart" -f helm/plane-ce-values.yaml
 "$helm_bin" lint "$plane_commercial_chart" -f helm/plane-commercial-values.example.yaml
 
 n8n_render="$chart_dir/n8n-rendered.yaml"
@@ -50,7 +50,7 @@ plane_commercial_render="$chart_dir/plane-commercial-rendered.yaml"
 "$helm_bin" template n8n "$n8n_chart" -n n8n \
   -f helm/n8n-values.example.yaml > "$n8n_render"
 "$helm_bin" template plane-app "$plane_ce_chart" -n plane \
-  -f helm/plane-ce-values.example.yaml > "$plane_ce_render"
+  -f helm/plane-ce-values.yaml > "$plane_ce_render"
 "$helm_bin" template plane-app "$plane_commercial_chart" -n plane \
   -f helm/plane-commercial-values.example.yaml > "$plane_commercial_render"
 

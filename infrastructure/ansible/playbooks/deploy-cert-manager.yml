@@ -59,7 +59,9 @@
       until: cert_manager_issuers_apply.rc == 0
       retries: 10
       delay: 10
-      changed_when: "'created' in cert_manager_issuers_apply.stdout or 'configured' in cert_manager_issuers_apply.stdout"
+      changed_when: >-
+        'created' in cert_manager_issuers_apply.stdout or
+        'configured' in cert_manager_issuers_apply.stdout
 
     - name: Attendre l'enregistrement des comptes ACME
       ansible.builtin.command:

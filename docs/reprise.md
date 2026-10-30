@@ -1,5 +1,13 @@
 # Reprise du travail — 2026-10-26
 
+## 2026-10-31 — NodePorts fermés, DNS et TLS
+
+NodePorts limités à `127.0.0.1` et appliqués : depuis l'extérieur, 31750 et
+31566 expirent, 80/443 répondent toujours. Seconde exécution du rôle :
+`changed=0` (idempotence vérifiée). DNS provisoire : sslip.io. cert-manager
+`v1.21.3` et les ClusterIssuers Let's Encrypt sont préparés ; voir
+[tls.md](tls.md). **Non encore appliqués.**
+
 ## 2026-10-31 — Redémarrage et Ingress
 
 Après redémarrage de la VM, K3s, les modules et le sysctl sont revenus seuls ;

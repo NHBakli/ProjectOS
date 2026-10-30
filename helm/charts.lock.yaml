@@ -19,3 +19,9 @@ charts:
     app_version: 2.44.5
     oci_digest: sha256:87632113aefe2228090da8895ee3bd512a0f658f0c31854a6c66bd8aa65bb379
     archive_sha256: 15a83b48bb53ab052e60d6ef553bb787912c234b2439101ef9dc574afcad1717
+  cert_manager:
+    # Déployé via le HelmChart K3s (kubernetes/cert-manager/helmchart.yaml).
+    repository: https://charts.jetstack.io
+    version: v1.21.3
+    app_version: v1.21.3
+    archive_sha256: 9ec67938b2981d8b333af61b3fcf53e26b4f6f5deb7ccda3de4ea116bb373a17

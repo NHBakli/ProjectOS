@@ -1,0 +1,100 @@
+---
+- name: Tester l'émission d'un certificat Let's Encrypt staging via Traefik
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  vars:
+    smoke_namespace: projectos-smoke
+    smoke_tls_host: "smoke.{{ projectos_base_domain }}"
+  tasks:
+    - name: Exiger l'autorisation et le domaine de base
+      ansible.builtin.assert:
+        that:
+          - k3s_smoke_tests_approved | default(false) | bool
+          - projectos_base_domain | default('') | length > 0
+        fail_msg: Fournir k3s_smoke_tests_approved=true et projectos_base_domain (fichier privé).
+
+    - name: Vérifier que le namespace du smoke test existe et lui appartient
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - get
+          - namespace
+          - "{{ smoke_namespace }}"
+          - -o
+          - jsonpath={.metadata.labels.projectos\.dev/smoke}
+      register: smoke_tls_ns
+      changed_when: false
+      failed_when: smoke_tls_ns.rc != 0 or smoke_tls_ns.stdout != 'true'
+
+    - name: Publier le Service de test derrière un Ingress TLS staging
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - apply
+          - -f
+          - '-'
+        stdin: |
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: smoke-tls
+            namespace: {{ smoke_namespace }}
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-staging
+          spec:
+            ingressClassName: traefik
+            tls:
+              - hosts:
+                  - {{ smoke_tls_host }}
+                secretName: smoke-tls
+            rules:
+              - host: {{ smoke_tls_host }}
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: smoke-server
+                          port:
+                            number: 8080
+      register: smoke_tls_apply
+      changed_when: "'created' in smoke_tls_apply.stdout or 'configured' in smoke_tls_apply.stdout"
+
+    - name: Attendre le certificat staging (défi HTTP-01)
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - wait
+          - -n
+          - "{{ smoke_namespace }}"
+          - --for=condition=Ready
+          - certificate/smoke-tls
+          - --timeout=300s
+      changed_when: false
+
+    - name: Lire la page de test en HTTPS via Traefik
+      ansible.builtin.uri:
+        url: "https://{{ smoke_tls_host }}/"
+        return_content: true
+        # Certificat staging : chaîne non reconnue par les navigateurs, attendu.
+        validate_certs: false
+      delegate_to: localhost
+      become: false
+      register: smoke_tls_page
+
+    - name: Vérifier la réponse HTTPS
+      ansible.builtin.assert:
+        that:
+          - smoke_tls_page.content | trim == 'projectos-smoke'
+
+    - name: Résumer le test TLS
+      ansible.builtin.debug:
+        msg: >-
+          Défi HTTP-01 réussi et page servie en HTTPS par Traefik avec un
+          certificat Let's Encrypt staging. L'Ingress reste dans le namespace
+          de test, supprimé par cleanup-smoke-k3s.yml.

@@ -1,0 +1,4 @@
+---
+# Copier hors du dépôt (ex. ~/.config/projectos/platform.yml) puis adapter.
+# Avec sslip.io, le domaine contient l'IP publique : ne pas le versionner.
+projectos_base_domain: 192-0-2-10.sslip.io

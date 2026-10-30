@@ -1,0 +1,74 @@
+---
+- name: Déployer cert-manager et les émetteurs Let's Encrypt
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  vars:
+    cert_manager_manifest_dir: "{{ playbook_dir }}/../../../kubernetes/cert-manager"
+  tasks:
+    - name: Exiger l'autorisation de déployer cert-manager
+      ansible.builtin.assert:
+        that:
+          - cert_manager_deploy_approved | default(false) | bool
+        fail_msg: cert-manager ajoute des CRD et des Pods au cluster ; autorisation explicite requise.
+
+    - name: Appliquer le HelmChart cert-manager
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - apply
+          - -f
+          - '-'
+        stdin: "{{ lookup('ansible.builtin.file', cert_manager_manifest_dir ~ '/helmchart.yaml') }}"
+      register: cert_manager_chart_apply
+      changed_when: "'created' in cert_manager_chart_apply.stdout or 'configured' in cert_manager_chart_apply.stdout"
+
+    - name: Attendre que les trois composants cert-manager soient disponibles
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - rollout
+          - status
+          - -n
+          - cert-manager
+          - "deployment/{{ item }}"
+          - --timeout=30s
+      loop:
+        - cert-manager
+        - cert-manager-cainjector
+        - cert-manager-webhook
+      register: cert_manager_rollout
+      until: cert_manager_rollout.rc == 0
+      retries: 20
+      delay: 15
+      changed_when: false
+
+    # Le webhook peut refuser les objets quelques secondes après son démarrage.
+    - name: Appliquer les ClusterIssuers Let's Encrypt
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - apply
+          - -f
+          - '-'
+        stdin: "{{ lookup('ansible.builtin.file', cert_manager_manifest_dir ~ '/cluster-issuers.yaml') }}"
+      register: cert_manager_issuers_apply
+      until: cert_manager_issuers_apply.rc == 0
+      retries: 10
+      delay: 10
+      changed_when: "'created' in cert_manager_issuers_apply.stdout or 'configured' in cert_manager_issuers_apply.stdout"
+
+    - name: Attendre l'enregistrement des comptes ACME
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - wait
+          - --for=condition=Ready
+          - clusterissuer/letsencrypt-staging
+          - clusterissuer/letsencrypt-prod
+          - --timeout=120s
+      changed_when: false

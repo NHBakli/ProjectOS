@@ -47,7 +47,7 @@ Les variables suivantes valent `false` ou sont vides par défaut :
 
 Le rôle refuse aussi d'agir si le forwarding IPv4 est encore à `0`, si un K3s
 non géré par Project OS existe, si TCP 6443 est déjà utilisé par un autre service
-ou si l'hôte n'est pas Ubuntu 22.04 sur amd64. Un binaire différent de la version
+ou si l'hôte n'est pas Ubuntu 24.04 sur amd64. Un binaire différent de la version
 épinglée demande `k3s_upgrade_approved: true` après sauvegarde et revue de la
 mise à niveau. Ces variables sont des verrous opératoires : elles ne remplacent
 pas les vérifications réseau et les tests pratiques.

@@ -1,5 +1,13 @@
 # Reprise du travail — 2026-10-26
 
+## Relevé du 2026-10-30 — VM KVM vérifiée
+
+Précheck et audit exécutés en lecture seule : VM `kvm`, Ubuntu 24.04.5, aucun
+Kubernetes installé, UFW `INPUT DROP` avec TCP 22 seul, TCP 6443 filtré depuis
+l'extérieur. Verdict `BLOCKED` dû à `ip_forward=0` et au module `overlay` non
+chargé. Détails dans [le relevé de phase 1](phase-1.md). Le rôle K3s cible
+désormais Ubuntu 24.04.
+
 ## Mise à jour du 2026-10-30 — passage en VM KVM
 
 Le VPS a été migré d'un conteneur LXC vers une **VM KVM** (information de

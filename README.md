@@ -4,7 +4,7 @@
 
 Project OS est un projet d'infrastructure **Infrastructure as Code (IaC)** visant à déployer et exploiter, sur un cluster **K3s single-node**, une plateforme de gestion de projets reposant sur **Plane** et **n8n**. L'objectif est de disposer d'un environnement personnel, éventuellement partagé avec une petite équipe (environ 5 à 7 personnes), et de pratiquer Kubernetes, Helm, Ansible, GitOps, réseau, stockage, sauvegardes et observabilité.
 
-> **État au 2026-10-30 :** le VPS a été migré d'un conteneur LXC vers une **VM KVM**, ce qui lève a priori les limites propres aux conteneurs (sysctls, modules, TUN). Le 2026-10-28, l'administrateur indiquait aussi que Kubernetes est accessible et que le VPS a été sécurisé. Ce nouvel état n'a pas encore été vérifié depuis ce dépôt : la distribution du cluster, sa configuration, sa santé et la protection externe de TCP 6443 restent à contrôler en lecture seule. Plane et n8n ne sont pas confirmés déployés.
+> **État au 2026-10-30 :** le VPS est une **VM KVM** sous Ubuntu 24.04 (vérifié en lecture seule). Aucun Kubernetes n'y est installé : l'annonce du 2026-10-28 concernait l'ancien hôte ou n'est plus d'actualité. UFW est actif avec une politique `INPUT DROP` et seul TCP 22 est autorisé. Plane et n8n ne sont pas déployés.
 
 ## Objectifs
 
@@ -56,20 +56,21 @@ flowchart TD
 
 ## Environnement cible connu
 
-| Ressource | Observation |
+| Ressource | Observation (2026-10-30) |
 |---|---|
-| OS | Ubuntu 22.04 |
-| Hébergement | **VM KVM** depuis le 2026-10-30 (auparavant conteneur LXC, noyau Proxmox `7.0.2-6-pve`) |
-| CPU | 9 vCPU visibles |
-| RAM | 12 Gio |
-| Disque | Environ 137 Go, dont ~129 Go libres au diagnostic |
-| Cgroups | v2, montage accessible |
-| Filesystem | ext4 ; OverlayFS disponible |
-| Réseau | Adresse IPv4 publique ; IPv4 forwarding observé à `0` |
-| TUN | `/dev/net/tun` absent |
-| Namespaces réseau | Test `sudo unshare --net -- ip -br link` réussi |
+| OS | Ubuntu 24.04.5 LTS, noyau `6.8.0-147-generic`, x86_64 |
+| Hébergement | **VM KVM** (`systemd-detect-virt`) ; auparavant conteneur LXC |
+| CPU | 9 vCPU |
+| RAM | ~11 Gio visibles |
+| Disque | 137 Go, ~123 Go libres |
+| Cgroups | v2, contrôleurs CPU et mémoire présents |
+| Modules | `overlay`, `br_netfilter`, `vxlan` disponibles, non chargés |
+| Réseau | IPv4 publique ; `ip_forward=0` (défaut Ubuntu) ; `/proc/sys` en écriture |
+| TUN | `/dev/net/tun` présent |
+| Pare-feu | UFW actif, `INPUT DROP`, seul TCP 22 autorisé ; Fail2ban actif |
+| Kubernetes | Aucun binaire, service ni répertoire K3s/kubelet/containerd |
 
-**Hormis la ligne Hébergement, ces relevés viennent de l'ancien LXC (2026-10-26) et doivent être refaits sur la VM KVM. Ce sont des prérequis partiels, pas une certification de compatibilité K3s.** Les tests containerd, CNI, Pods, DNS et PVC doivent encore être effectués. Le mode réseau de Flannel (`vxlan`, `host-gw` ou autre) sera retenu après essais contrôlés : ne pas le considérer comme acquis.
+**Prérequis partiels, pas une certification de compatibilité K3s.** Les tests containerd, CNI, Pods, DNS et PVC doivent encore être effectués. Le mode réseau de Flannel (`vxlan`, `host-gw` ou autre) sera retenu après essais contrôlés : ne pas le considérer comme acquis.
 
 ## Séparation des responsabilités
 
@@ -171,4 +172,4 @@ Une V1 est livrable lorsque K3s est sain, que Plane et n8n fonctionnent sous HTT
 
 ## État actuel
 
-**Phase active :** audit en lecture seule du cluster signalé comme accessible, puis validation réseau, DNS, stockage et sauvegardes avant tout déploiement applicatif. Le VPS est passé de LXC à une VM KVM le 2026-10-30 : les relevés du 2026-10-26 décrivent l'ancien hôte et le précheck doit être relancé.
+**Phase active :** préparation de l'installation K3s sur la VM KVM : modules et forwarding IPv4 à activer de façon versionnée, interaction avec UFW à décider, puis installation approuvée et smoke tests. Voir [docs/phase-1.md](docs/phase-1.md).

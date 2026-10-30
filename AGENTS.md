@@ -11,14 +11,11 @@ Lis `README.md` et inspecte le dépôt avant de commencer. Le README décrit l'i
 ## Contexte confirmé
 
 - **AegisOps est un projet distinct, déjà utilisé pour préparer et durcir le VPS.** Ne pas recréer le hardening de l'hôte, changer les comptes ou réécrire la configuration SSH.
-- Hôte cible : Ubuntu 22.04, **migré d'un conteneur LXC vers une VM KVM** (annoncé par l'administrateur le 2026-10-30, non encore vérifié depuis ce dépôt). Dans une VM, sysctls, modules noyau et `/dev/net/tun` ne sont plus limités par le confinement du conteneur, mais doivent être re-mesurés.
-- *Relevés historiques sur l'ancien LXC (2026-10-26), à refaire sur la VM KVM :*
-- Ressources observées : 9 vCPU, 12 Gio de RAM, ~129 Go disponibles lors des derniers diagnostics.
-- VPS avec **IPv4 publique** ; compte non-root administrateur `aegisadmin` avec sudo. Ne jamais codifier l'IP publique, l'alias SSH ou des identifiants réels dans des fichiers suivis par Git.
-- cgroups v2 accessibles, ext4 et OverlayFS détectés, systemd fonctionne ; `unshare --net` a réussi ; `iptables -L` a fonctionné.
-- `/dev/net/tun` absent ; `modinfo` ne voit pas `vxlan` / `br_netfilter` depuis LXC ; `/proc/sys` monté en lecture seule ; `net.ipv4.ip_forward` observé à `0`.
-- Chaîne iptables `f2b-sshd` observée : **Fail2ban est probablement actif**. UFW a été observé inactif, mais ne conclus pas que le réseau est sans protection : les règles hôte/fournisseur peuvent intervenir.
-- **K3s n'est pas confirmé installé** et la compatibilité réelle containerd/CNI/stockage n'a pas encore été prouvée. Ne considère pas les diagnostics passés comme un feu vert définitif.
+- Hôte cible (vérifié en lecture seule le 2026-10-30) : **VM KVM**, Ubuntu 24.04.5, noyau `6.8.0-147-generic`, 9 vCPU, ~11 Gio de RAM, ~123 Go libres. L'ancien conteneur LXC/Proxmox n'est plus la cible.
+- VPS avec **IPv4 publique** ; compte non-root administrateur avec sudo. Ne jamais codifier l'IP publique, l'alias SSH ou des identifiants réels dans des fichiers suivis par Git.
+- cgroups v2 (cpu, memory), systemd PID 1, namespaces réseau, `/dev/net/tun` présent ; `/proc/sys` accessible en écriture ; `net.ipv4.ip_forward` à `0` ; modules `overlay`, `br_netfilter`, `vxlan` disponibles mais non chargés.
+- **UFW actif** (règles AegisOps), politique `INPUT DROP`, seul TCP 22 autorisé ; **Fail2ban actif** (`f2b-sshd`). TCP 6443 expire depuis l'extérieur. Les règles fournisseur restent inconnues.
+- **Aucun Kubernetes installé** sur la VM (ni K3s, ni kubelet, ni containerd). La compatibilité containerd/CNI/stockage reste à prouver par des essais.
 - Utilisation prévue : projet personnel, équipe éventuelle de **5–7 utilisateurs** ; cluster **single-node** initial, sans promesse de haute disponibilité.
 
 ## Architecture voulue

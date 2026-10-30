@@ -19,11 +19,11 @@
     gather_subset:
       - min
 
-- name: Limiter ce rôle à Ubuntu 22.04 sur amd64
+- name: Limiter ce rôle à Ubuntu 24.04 sur amd64
   ansible.builtin.assert:
     that:
       - ansible_facts['distribution'] == 'Ubuntu'
-      - ansible_facts['distribution_version'] == '22.04'
+      - ansible_facts['distribution_version'] == '24.04'
       - ansible_facts['architecture'] == 'x86_64'
     fail_msg: La version du binaire et le système cible doivent être revus.
 

@@ -11,7 +11,7 @@
 - [ ] Établir comment TCP 6443 est filtré depuis Internet, côté VM, hôte et fournisseur.
 - [x] ~~Valider avec l'administrateur Proxmox les ajustements LXC nécessaires.~~
   Remplacé : le VPS est une VM KVM depuis le 2026-10-30.
-- [ ] Relancer le précheck sur la VM KVM et remplacer le relevé ci-dessous.
+- [x] Relancer le précheck sur la VM KVM (2026-10-30).
 
 ## Exécution
 
@@ -50,6 +50,36 @@ La présence d'OverlayFS dans `/proc/filesystems` ne prouve pas qu'un conteneur
 pourra monter overlay. Le résultat de `ss` n'établit pas l'accessibilité depuis
 Internet. Une valeur `ip_forward=0` bloque la préparation tant qu'une solution
 contrôlée n'est pas décidée ; le playbook ne modifie aucun sysctl.
+
+## Résultat sur la VM KVM — 2026-10-30
+
+Le playbook a terminé avec 12 tâches `ok`, 0 modifiée, 0 erreur.
+Verdict : **`BLOCKED`**, pour deux causes attendues sur une Ubuntu neuve :
+
+| Observation | Résultat |
+|---|---|
+| Virtualisation | `kvm` |
+| systemd est PID 1 | Oui |
+| Contrôleurs cgroups v2 CPU et mémoire | Présents |
+| OverlayFS dans `/proc/filesystems` | **Non** : module `overlay` disponible mais non chargé |
+| Namespace réseau / TUN | Présents |
+| Forwarding IPv4 | **Désactivé** (`0`, défaut Ubuntu) |
+| `/proc/sys` | En écriture |
+| TCP 6443 en écoute | Non |
+
+Audit complémentaire en lecture seule : Ubuntu 24.04.5, noyau `6.8.0-147-generic`,
+modules `br_netfilter` et `vxlan` disponibles non chargés, aucun composant
+Kubernetes ni runtime de conteneurs. UFW est actif (`INPUT DROP`, seul TCP 22
+autorisé, règles AegisOps) et Fail2ban est actif. Depuis un réseau externe,
+TCP 6443 expire (paquets ignorés) et TCP 22 répond. Cela prouve le filtrage
+**côté hôte** aujourd'hui, sans service en écoute ; le filtrage fournisseur
+reste inconnu.
+
+Les deux blocages se lèvent par une configuration versionnée et approuvée :
+chargement persistant de `overlay` et `br_netfilter`, puis sysctl
+`net.ipv4.ip_forward=1`. La politique UFW `INPUT DROP` peut aussi bloquer le
+trafic des Pods vers l'hôte (API, DNS) ; l'éventuelle autorisation des plages
+Pods/Services doit être décidée avec la politique AegisOps.
 
 ## Incertitudes LXC à lever (historique)
 

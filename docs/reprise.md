@@ -5,8 +5,11 @@
 NodePorts limités à `127.0.0.1` et appliqués : depuis l'extérieur, 31750 et
 31566 expirent, 80/443 répondent toujours. Seconde exécution du rôle :
 `changed=0` (idempotence vérifiée). DNS provisoire : sslip.io. cert-manager
-`v1.21.3` et les ClusterIssuers Let's Encrypt sont préparés ; voir
-[tls.md](tls.md). **Non encore appliqués.**
+`v1.21.3` est déployé ; les ClusterIssuers `letsencrypt-staging` et
+`letsencrypt-prod` sont `Ready` (comptes ACME enregistrés). `smoke-tls.yml` a
+réussi : défi HTTP-01 validé par Let's Encrypt staging et page de test servie
+en HTTPS par Traefik sur un nom sslip.io. Voir [tls.md](tls.md). Le namespace
+`projectos-smoke` (avec son Ingress) est toujours présent.
 
 ## 2026-10-31 — Redémarrage et Ingress
 

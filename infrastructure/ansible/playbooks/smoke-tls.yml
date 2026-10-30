@@ -26,7 +26,14 @@
           - jsonpath={.metadata.labels.projectos\.dev/smoke}
       register: smoke_tls_ns
       changed_when: false
-      failed_when: smoke_tls_ns.rc != 0 or smoke_tls_ns.stdout != 'true'
+      failed_when: false
+
+    - name: Exiger le namespace créé par smoke-k3s.yml
+      ansible.builtin.assert:
+        that:
+          - smoke_tls_ns.rc == 0
+          - smoke_tls_ns.stdout == 'true'
+        fail_msg: Namespace de test absent ou non géré ; lancer d'abord smoke-k3s.yml.
 
     - name: Publier le Service de test derrière un Ingress TLS staging
       ansible.builtin.command:

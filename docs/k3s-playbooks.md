@@ -27,8 +27,8 @@ Il ne lance pas d'installateur distant. La version est un point de départ épin
 
 La configuration est dans `/etc/rancher/k3s/config.yaml` (mode `0600`) et le
 kubeconfig K3s est demandé en mode `0600`. Le chiffrement des Secrets au repos
-est activé. Traefik et ServiceLB sont désactivés tant que l'exposition HTTPS
-n'est pas conçue. Le backend Flannel et l'adresse d'écoute de l'API doivent être
+est activé. Traefik et ServiceLB (fournis par K3s) assurent l'entrée HTTP/HTTPS
+sur les ports 80/443 ; `k3s_enable_ingress: false` les désactive. Le backend Flannel et l'adresse d'écoute de l'API doivent être
 choisis explicitement après la validation réseau. Le simple fait de choisir
 `host-gw` ne garantit pas à lui seul le réseau des Pods.
 

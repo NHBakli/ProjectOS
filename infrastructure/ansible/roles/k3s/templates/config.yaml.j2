@@ -5,6 +5,8 @@ bind-address: {{ k3s_api_bind_address | to_json }}
 cluster-cidr: {{ k3s_cluster_cidr | to_json }}
 service-cidr: {{ k3s_service_cidr | to_json }}
 flannel-backend: {{ k3s_flannel_backend | to_json }}
+{% if not k3s_enable_ingress | bool %}
 disable:
   - traefik
   - servicelb
+{% endif %}

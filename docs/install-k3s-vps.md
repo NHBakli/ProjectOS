@@ -10,9 +10,9 @@ Ce que le rôle modifie sur le VPS :
 |---|---|
 | `/etc/modules-load.d/projectos-k3s.conf` | Charge `overlay` et `br_netfilter` au démarrage (et immédiatement). |
 | `/etc/sysctl.d/90-projectos-k3s.conf` | `net.ipv4.ip_forward=1`, `net.bridge.bridge-nf-call-iptables=1`. |
-| UFW | Deux règles `allow from 10.42.0.0/16` et `10.43.0.0/16` (Pods/Services vers l'hôte), commentées `Project OS K3s`. **6443 reste fermé à Internet.** |
+| UFW | Deux règles `allow from 10.42.0.0/16` et `10.43.0.0/16` (Pods/Services vers l'hôte), commentées `Project OS K3s`, et `allow 80,443/tcp` commentées `Project OS ingress`. **6443 reste fermé à Internet.** |
 | `/usr/local/bin/k3s` | Binaire `v1.37.1+k3s1` vérifié par SHA-256. |
-| `/etc/rancher/k3s/config.yaml` | Configuration `0600`, Secrets chiffrés au repos, Traefik et ServiceLB désactivés. |
+| `/etc/rancher/k3s/config.yaml` | Configuration `0600`, Secrets chiffrés au repos, Traefik et ServiceLB de K3s activés pour l'Ingress. |
 | `/etc/systemd/system/k3s.service` | Unité systemd, activée et démarrée. |
 
 K3s ajoute ensuite ses propres règles iptables (Flannel, kube-proxy,
@@ -118,6 +118,20 @@ KUBECONFIG=~/.kube/projectos.yaml kubectl get nodes
 Le kubeconfig contient des identifiants administrateur : ne jamais l'afficher,
 le committer ni le partager.
 
+## Exposition HTTP/HTTPS
+
+Traefik reçoit le trafic des ports 80/443 via ServiceLB (`svclb-traefik`).
+Ces ports sont publiés par DNAT dans iptables : le trafic passe par la chaîne
+FORWARD et **contourne les règles INPUT d'UFW**. Il en va de même pour tout
+Service `NodePort` ou `hostPort`. Règle du projet : n'exposer que Traefik ;
+aucun Service `NodePort`, `LoadBalancer` ou `hostPort` supplémentaire sans
+revue. Contrôler régulièrement depuis l'extérieur que seuls 22, 80 et 443
+répondent.
+
+Pour appliquer le changement sur un K3s déjà installé, relancer la commande de
+l'étape 4 : la configuration modifiée redémarre K3s (les Pods continuent de
+tourner), puis K3s déploie Traefik dans `kube-system`.
+
 ## Retour arrière
 
 Arrêter K3s sans supprimer ses données :
@@ -131,6 +145,8 @@ Retirer les changements de l'hôte, uniquement si K3s est abandonné :
 ```bash
 sudo ufw delete allow from 10.42.0.0/16
 sudo ufw delete allow from 10.43.0.0/16
+sudo ufw delete allow 80/tcp
+sudo ufw delete allow 443/tcp
 sudo rm /etc/sysctl.d/90-projectos-k3s.conf /etc/modules-load.d/projectos-k3s.conf
 ```
 

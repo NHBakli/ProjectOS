@@ -123,6 +123,15 @@
     - "{{ k3s_service_cidr }}"
   when: k3s_manage_ufw_cluster_rules | bool
 
+- name: Ouvrir HTTP et HTTPS pour l'Ingress dans UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+    comment: Project OS ingress
+  loop: "{{ k3s_ufw_ingress_ports }}"
+  when: k3s_enable_ingress | bool
+
 - name: Vérifier que le forwarding IPv4 est actif
   ansible.builtin.command: cat /proc/sys/net/ipv4/ip_forward
   register: k3s_ipv4_forward

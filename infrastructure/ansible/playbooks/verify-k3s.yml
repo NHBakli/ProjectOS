@@ -1,0 +1,55 @@
+---
+- name: Vérifier K3s sans créer de ressources Kubernetes
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Lire l'état des services
+      ansible.builtin.service_facts:
+
+    - name: Lire l'état des nœuds
+      ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes -o json
+      register: k3s_nodes_json
+      changed_when: false
+
+    - name: Lire l'état des Pods système
+      ansible.builtin.command: /usr/local/bin/k3s kubectl get pods -n kube-system -o json
+      register: k3s_system_pods_json
+      changed_when: false
+
+    - name: Lire les StorageClasses disponibles
+      ansible.builtin.command: /usr/local/bin/k3s kubectl get storageclass -o json
+      register: k3s_storage_classes_json
+      changed_when: false
+
+    - name: Préparer le résumé de santé sans noms ni adresses
+      ansible.builtin.set_fact:
+        k3s_nodes: "{{ (k3s_nodes_json.stdout | from_json).items }}"
+        k3s_system_pods: "{{ (k3s_system_pods_json.stdout | from_json).items }}"
+        k3s_storage_classes: "{{ (k3s_storage_classes_json.stdout | from_json).items }}"
+
+    - name: Vérifier que le nœud unique est Ready
+      ansible.builtin.assert:
+        that:
+          - "'k3s.service' in ansible_facts.services"
+          - "ansible_facts.services['k3s.service'].state == 'running'"
+          - k3s_nodes | length == 1
+          - >-
+            k3s_nodes[0].status.conditions |
+            selectattr('type', 'equalto', 'Ready') |
+            selectattr('status', 'equalto', 'True') |
+            list | length == 1
+        fail_msg: K3s ou son nœud unique n'est pas prêt.
+
+    - name: Afficher les observations sans données d'accès
+      ansible.builtin.debug:
+        msg:
+          service_active: "{{ ansible_facts.services['k3s.service'].state == 'running' }}"
+          ready_nodes: 1
+          system_pods_total: "{{ k3s_system_pods | length }}"
+          system_pods_running: >-
+            {{ k3s_system_pods | selectattr('status.phase', 'equalto', 'Running') | list | length }}
+          storage_classes_total: "{{ k3s_storage_classes | length }}"
+          note: >-
+            Cette lecture ne valide pas le DNS, le trafic inter-Pods, le montage
+            d'un PVC ni la restauration de données.

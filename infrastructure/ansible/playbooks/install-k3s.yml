@@ -1,0 +1,7 @@
+---
+- name: Installer K3s single-node après validation du LXC et du réseau
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  roles:
+    - role: k3s

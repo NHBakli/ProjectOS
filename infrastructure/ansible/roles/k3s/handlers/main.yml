@@ -1,0 +1,10 @@
+---
+- name: Recharger systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Redémarrer K3s
+  ansible.builtin.systemd_service:
+    name: k3s
+    state: restarted
+  when: k3s_unit_before.stat.exists

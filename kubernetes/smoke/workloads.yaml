@@ -1,0 +1,113 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smoke-server
+  namespace: projectos-smoke
+spec:
+  selector:
+    app: smoke-server
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: smoke-data
+  namespace: projectos-smoke
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 64Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: smoke-server
+  namespace: projectos-smoke
+  labels:
+    app: smoke-server
+spec:
+  containers:
+    - name: server
+      image: busybox:1.36.1
+      command:
+        - sh
+        - -c
+        - mkdir -p /www && printf 'projectos-smoke\n' > /www/index.html && exec httpd -f -p 8080 -h /www
+      ports:
+        - name: http
+          containerPort: 8080
+      readinessProbe:
+        httpGet:
+          path: /
+          port: http
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: smoke-client
+  namespace: projectos-smoke
+spec:
+  containers:
+    - name: client
+      image: busybox:1.36.1
+      command:
+        - sleep
+        - '3600'
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smoke-volume
+  namespace: projectos-smoke
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: smoke-volume
+  template:
+    metadata:
+      labels:
+        app: smoke-volume
+    spec:
+      containers:
+        - name: volume
+          image: busybox:1.36.1
+          command:
+            - sleep
+            - '3600'
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: smoke-data

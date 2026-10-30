@@ -1,0 +1,42 @@
+---
+# Candidat Commercial Free ; domaine, PVC et Secrets à confirmer.
+planeVersion: v3.3.3
+
+license:
+  licenseDomain: plane.example.invalid
+  licenseServer: https://prime.plane.so
+
+ingress:
+  enabled: true
+  ingressClass: traefik
+  minioHost: ''
+  rabbitmqHost: ''
+
+ssl:
+  tls_secret_name: plane-tls
+  createIssuer: false
+  generateCerts: false
+
+env:
+  storageClass: local-path
+  requireExplicitSecrets: true
+
+services:
+  postgres:
+    volumeSize: 10Gi
+  redis:
+    volumeSize: 1Gi
+  rabbitmq:
+    volumeSize: 1Gi
+  minio:
+    volumeSize: 10Gi
+
+external_secrets:
+  app_keys_existingSecret: plane-app-keys
+  app_env_existingSecret: plane-app-env
+  live_env_existingSecret: plane-live-env
+  silo_env_existingSecret: plane-silo-env
+  doc_store_existingSecret: plane-doc-store
+  pgdb_existingSecret: plane-postgres
+  rabbitmq_existingSecret: plane-rabbitmq
+  opensearch_existingSecret: plane-opensearch

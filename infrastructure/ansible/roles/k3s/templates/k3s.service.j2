@@ -1,0 +1,19 @@
+# Managed by Project OS.
+[Unit]
+Description=K3s single-node server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=notify
+ExecStart=/usr/local/bin/k3s server --config /etc/rancher/k3s/config.yaml
+KillMode=process
+Delegate=yes
+Restart=always
+RestartSec=5s
+LimitNOFILE=1048576
+LimitNPROC=infinity
+TasksMax=infinity
+
+[Install]
+WantedBy=multi-user.target

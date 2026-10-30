@@ -1,0 +1,21 @@
+---
+# Versions candidates vérifiées le 2026-10-26. Revoir avant déploiement.
+charts:
+  plane_community:
+    repository: https://helm.plane.so/
+    name: plane-ce
+    version: 1.8.5
+    app_version: 1.4.2
+    archive_sha256: 9d68ae1eb2d9e1a6181d1779063fa7feb949fcd48de31b2df4d847ea1eece755
+  plane_commercial_free:
+    repository: https://helm.plane.so/
+    name: plane-enterprise
+    version: 3.10.12
+    app_version: 3.3.3
+    archive_sha256: e75e9a5dfa0a3f8100614916bb130b8d4bdc7021177f6ef47a25853fdb4bc621
+  n8n:
+    repository: oci://ghcr.io/n8n-io/n8n-helm-chart/n8n
+    version: 1.17.0
+    app_version: 2.44.5
+    oci_digest: sha256:87632113aefe2228090da8895ee3bd512a0f658f0c31854a6c66bd8aa65bb379
+    archive_sha256: 15a83b48bb53ab052e60d6ef553bb787912c234b2439101ef9dc574afcad1717

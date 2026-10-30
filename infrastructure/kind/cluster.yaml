@@ -1,0 +1,19 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+name: ProjectOS
+
+nodes:
+  - role: control-plane
+
+  - role: worker
+    labels:
+      workload: plane
+
+  - role: worker
+    labels:
+      workload: backend
+
+  - role: worker
+    labels:
+      workload: database

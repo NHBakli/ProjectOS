@@ -1,0 +1,46 @@
+---
+- name: Supprimer uniquement les ressources du smoke test après autorisation
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Exiger l'autorisation explicite de supprimer le PVC de test
+      ansible.builtin.assert:
+        that:
+          - k3s_smoke_cleanup_approved | default(false) | bool
+        fail_msg: Le nettoyage supprime le namespace et son PVC de test ; autorisation requise.
+
+    - name: Lire le namespace de test
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - get
+          - namespace
+          - projectos-smoke
+          - -o
+          - json
+      register: smoke_ns
+      changed_when: false
+      failed_when: false
+
+    - name: Vérifier que le namespace appartient au smoke test
+      ansible.builtin.assert:
+        that:
+          - >-
+            smoke_ns.rc != 0 or
+            (smoke_ns.stdout | from_json).metadata.get('labels', {}).get('projectos.dev/smoke', '') == 'true'
+        fail_msg: Le namespace existe mais n'appartient pas au smoke test ; arrêt.
+
+    - name: Supprimer le namespace et le PVC temporaires
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - delete
+          - namespace
+          - projectos-smoke
+          - --wait=true
+          - --timeout=180s
+      when: smoke_ns.rc == 0
+      changed_when: true

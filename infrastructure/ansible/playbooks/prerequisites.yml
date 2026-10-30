@@ -1,0 +1,102 @@
+---
+- name: Inspecter les prérequis K3s sans modifier l'hôte
+  hosts: k3s_candidates
+  gather_facts: false
+  tasks:
+    - name: Lire le processus PID 1
+      ansible.builtin.raw: cat /proc/1/comm
+      register: pid_one
+      changed_when: false
+      failed_when: false
+
+    - name: Lire les contrôleurs cgroups v2
+      ansible.builtin.raw: cat /sys/fs/cgroup/cgroup.controllers
+      register: cgroups
+      changed_when: false
+      failed_when: false
+
+    - name: Lire les systèmes de fichiers pris en charge
+      ansible.builtin.raw: cat /proc/filesystems
+      register: filesystems
+      changed_when: false
+      failed_when: false
+
+    - name: Lire les options de montage de proc sys
+      ansible.builtin.raw: findmnt -n -o OPTIONS --target /proc/sys
+      register: proc_sys_mount
+      changed_when: false
+      failed_when: false
+
+    - name: Lire le forwarding IPv4
+      ansible.builtin.raw: cat /proc/sys/net/ipv4/ip_forward
+      register: ipv4_forward
+      changed_when: false
+      failed_when: false
+
+    - name: Lire les capacités du processus de diagnostic
+      ansible.builtin.raw: "sed -n 's/^CapEff:[[:space:]]*//p' /proc/self/status"
+      register: capabilities
+      changed_when: false
+      failed_when: false
+
+    - name: Lire la présence du namespace réseau
+      ansible.builtin.raw: test -e /proc/self/ns/net
+      register: network_namespace
+      changed_when: false
+      failed_when: false
+
+    - name: Lire la présence du périphérique TUN
+      ansible.builtin.raw: test -e /dev/net/tun
+      register: tun_device
+      changed_when: false
+      failed_when: false
+
+    - name: Lire les ports TCP en écoute
+      ansible.builtin.raw: ss -H -ltn
+      register: tcp_listeners
+      changed_when: false
+      failed_when: false
+
+    - name: Calculer le verdict préliminaire
+      ansible.builtin.set_fact:
+        k3s_precheck_blocked: >-
+          {{
+            pid_one.rc != 0 or pid_one.stdout | trim != 'systemd' or
+            cgroups.rc != 0 or
+            'cpu' not in cgroups.stdout.split() or
+            'memory' not in cgroups.stdout.split() or
+            filesystems.rc != 0 or
+            'overlay' not in filesystems.stdout or
+            ipv4_forward.rc != 0 or ipv4_forward.stdout | trim != '1' or
+            network_namespace.rc != 0
+          }}
+        k3s_precheck_uncertain: >-
+          {{
+            proc_sys_mount.rc != 0 or
+            capabilities.rc != 0 or
+            tcp_listeners.rc != 0
+          }}
+
+    - name: Afficher le résumé sans adresses ni secrets
+      ansible.builtin.debug:
+        msg:
+          status: "{{ 'BLOCKED' if k3s_precheck_blocked else 'NEEDS_VALIDATION' }}"
+          systemd_pid_1: "{{ pid_one.rc == 0 and pid_one.stdout | trim == 'systemd' }}"
+          cgroups_v2_cpu_memory: >-
+            {{ cgroups.rc == 0 and 'cpu' in cgroups.stdout.split()
+               and 'memory' in cgroups.stdout.split() }}
+          overlay_available: "{{ filesystems.rc == 0 and 'overlay' in filesystems.stdout }}"
+          ipv4_forward_enabled: "{{ ipv4_forward.rc == 0 and ipv4_forward.stdout | trim == '1' }}"
+          proc_sys_read_only: "{{ proc_sys_mount.rc == 0 and 'ro' in proc_sys_mount.stdout.split(',') }}"
+          network_namespace_present: "{{ network_namespace.rc == 0 }}"
+          tun_present: "{{ tun_device.rc == 0 }}"
+          capability_diagnostic_available: "{{ capabilities.rc == 0 and capabilities.stdout | trim | length > 0 }}"
+          effective_capabilities_hex: "{{ capabilities.stdout | trim if capabilities.rc == 0 else 'unavailable' }}"
+          tcp_listener_diagnostic_available: "{{ tcp_listeners.rc == 0 }}"
+          tcp_6443_listening_locally: >-
+            {{ tcp_listeners.rc == 0 and
+               (tcp_listeners.stdout is search('(?m):6443\\s')) }}
+          incomplete_diagnostics: "{{ k3s_precheck_uncertain }}"
+          note: >-
+            READY exige des essais contrôlés de containerd, CNI, DNS, PVC et de la
+            protection externe de l'API 6443 ; ce précheck ne les réalise pas.

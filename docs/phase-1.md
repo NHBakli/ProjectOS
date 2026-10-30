@@ -1,0 +1,83 @@
+# Phase 1 — suivi et préchecks
+
+## État du travail
+
+- [x] Inspecter le dépôt et préserver les changements déjà présents.
+- [x] Ajouter un inventaire d'exemple sans adresse ni compte réel.
+- [x] Exclure les secrets et les fichiers locaux courants de Git.
+- [x] Écrire un précheck K3s en lecture seule et documenter son verdict.
+- [x] Ajouter une validation statique locale.
+- [x] Exécuter le précheck sur le LXC cible et archiver un résumé expurgé.
+- [ ] Établir comment TCP 6443 est filtré depuis Internet, côté LXC, hôte et fournisseur.
+- [ ] Valider avec l'administrateur Proxmox les ajustements minimaux nécessaires, si le précheck bloque.
+
+## Exécution
+
+Depuis la racine du dépôt :
+
+```bash
+./scripts/validate.sh
+ANSIBLE_CONFIG=infrastructure/ansible.cfg ansible-playbook \
+  -i /chemin/prive/hosts.yml infrastructure/ansible/playbooks/prerequisites.yml
+```
+
+La validation locale requiert les outils épinglés dans
+`requirements-validation.txt` (`python -m pip install -r requirements-validation.txt`)
+ou leurs équivalents déjà installés. La CI exécute la même commande.
+
+Copier `infrastructure/ansible/inventories/production/hosts.example.yml` vers
+`hosts.yml` dans un emplacement privé, puis remplacer l'adresse réservée et le
+compte d'exemple. Aucun secret n'est requis dans l'inventaire. La seconde commande
+ouvre une connexion SSH mais n'installe rien. Les tâches `raw` ne transfèrent pas
+de module Ansible ni de fichier temporaire sur le LXC. Elles n'utilisent pas sudo.
+Un refus SSH ou une tâche inaccessible ne vaut pas diagnostic de compatibilité.
+
+## Interprétation
+
+- `BLOCKED` : un prérequis local indispensable manque, notamment systemd comme
+  PID 1, les contrôleurs CPU/mémoire de cgroups v2, OverlayFS, le namespace réseau
+  ou le forwarding IPv4. Identifier la cause avant toute installation.
+- `NEEDS_VALIDATION` : aucun blocage de cette liste n'a été observé. Les capacités
+  du processus, les règles réseau, les ports et le stockage restent à interpréter.
+- `READY` : réservé à une validation pratique ultérieure de containerd, des Pods,
+  du CNI, du DNS, des PVC et de la protection de TCP 6443. Le playbook ne le retourne
+  jamais à lui seul.
+
+Le diagnostic de TUN est informatif : son absence n'est pas à elle seule un blocage.
+La présence d'OverlayFS dans `/proc/filesystems` ne prouve pas qu'un conteneur
+pourra monter overlay. Le résultat de `ss` n'établit pas l'accessibilité depuis
+Internet. Une valeur `ip_forward=0` bloque la préparation tant qu'une solution
+contrôlée n'est pas décidée ; le playbook ne modifie aucun sysctl.
+
+## Incertitudes LXC à lever
+
+Le comportement réel de containerd, des montages overlay, de Flannel, du DNS
+interne et des PVC n'est pas prouvé. La visibilité des modules `vxlan` et
+`br_netfilter` dans LXC n'indique pas à elle seule leur disponibilité côté hôte.
+Si une adaptation Proxmox ou fournisseur est nécessaire, documenter le changement
+minimal, son impact réseau et son retour arrière avant intervention. Ne pas
+convertir le conteneur en mode privilégié ni désactiver son confinement par défaut.
+
+## Résultat sur le LXC cible — 2026-10-26
+
+Le playbook a terminé avec 11 tâches `ok`, 0 tâche modifiée et 0 erreur.
+Verdict : **`BLOCKED`** pour l'installation de K3s dans l'état observé.
+
+| Observation | Résultat |
+|---|---|
+| systemd est PID 1 | Oui |
+| Contrôleurs cgroups v2 CPU et mémoire | Présents |
+| OverlayFS listé par le noyau | Oui, montage réel non testé |
+| Namespace réseau | Présent, création et trafic Pod non testés |
+| Forwarding IPv4 | Désactivé (`0`) |
+| `/proc/sys` | Monté en lecture seule |
+| TUN | Absent, non classé comme blocage isolé |
+| TCP 6443 en écoute dans le LXC | Non lors du précheck ; filtrage externe inconnu |
+
+Les capacités lues sont celles du processus de diagnostic non-root : elles ne
+permettent pas de conclure sur les capacités accordées à containerd ou à K3s.
+Le précheck ne démontre ni le fonctionnement de containerd/CNI/PVC, ni le filtrage
+de TCP 6443 depuis Internet. Avant la phase 2, il faut déterminer avec accès
+administratif Proxmox ou fournisseur comment activer le forwarding nécessaire
+sans élargir les privilèges LXC de façon arbitraire, puis vérifier la protection
+réseau externe de l'API et prévoir un retour arrière.

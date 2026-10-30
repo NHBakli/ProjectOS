@@ -1,0 +1,15 @@
+---
+# Ces verrous sont faux tant que la compatibilité et le filtrage ne sont pas prouvés.
+k3s_install_approved: false
+k3s_upgrade_approved: false
+k3s_lxc_compatibility_verified: false
+k3s_api_protection_verified: false
+k3s_api_protection_evidence: ''
+
+# Choisir ces valeurs après les essais réseau et la réponse du fournisseur.
+k3s_flannel_backend: ''
+k3s_api_bind_address: ''
+
+# Binaire amd64 publié par le projet K3s et contrôlé par SHA-256.
+k3s_version: v1.37.1+k3s1
+k3s_binary_sha256: 92b94582eb7b34a8cf532e6006842b9ed215a6783cf56a3dd6271fd35243b2c0

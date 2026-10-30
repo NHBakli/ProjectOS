@@ -1,0 +1,33 @@
+---
+name: Static validation
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install validation tools
+        run: python -m pip install -r requirements-validation.txt
+      - name: Validate Phase 1
+        run: bash scripts/validate.sh
+      - name: Install Helm 3.22.1
+        run: |
+          curl --fail --silent --show-error --location \
+            --output /tmp/projectos-helm.tgz \
+            https://get.helm.sh/helm-v3.22.1-linux-amd64.tar.gz
+          printf '%s  %s\n' \
+            '896cf63684a42a723d61c980369d6e588330927deb13676ca0d85006dd6da0ea' \
+            /tmp/projectos-helm.tgz | sha256sum --check
+          tar -xzf /tmp/projectos-helm.tgz -C /tmp linux-amd64/helm
+          echo /tmp/linux-amd64 >> "$GITHUB_PATH"
+      - name: Validate n8n Helm chart
+        run: bash scripts/validate-helm.sh

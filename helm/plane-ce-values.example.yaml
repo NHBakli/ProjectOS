@@ -1,0 +1,42 @@
+---
+# Candidat Community Edition ; domaine, PVC et Secrets à confirmer.
+planeVersion: v1.4.2
+
+ingress:
+  enabled: true
+  appHost: plane.example.invalid
+  minioHost: ''
+  rabbitmqHost: ''
+  ingressClass: traefik
+
+ssl:
+  tls_secret_name: plane-tls
+  createIssuer: false
+  generateCerts: false
+
+postgres:
+  storageClass: local-path
+  volumeSize: 10Gi
+
+redis:
+  storageClass: local-path
+  volumeSize: 1Gi
+
+rabbitmq:
+  storageClass: local-path
+  volumeSize: 1Gi
+
+minio:
+  storageClass: local-path
+  volumeSize: 10Gi
+
+env:
+  requireExplicitSecrets: true
+
+external_secrets:
+  app_keys_existingSecret: plane-app-keys
+  app_env_existingSecret: plane-app-env
+  live_env_existingSecret: plane-live-env
+  doc_store_existingSecret: plane-doc-store
+  pgdb_existingSecret: plane-postgres
+  rabbitmq_existingSecret: plane-rabbitmq

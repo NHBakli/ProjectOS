@@ -1,0 +1,64 @@
+---
+# Exemple pour une petite instance single-node. Remplacer domaine, StorageClass
+# et noms de Secrets avant déploiement. Ne jamais mettre la clé ici.
+image:
+  tag: '2.44.5'
+
+queueMode:
+  enabled: false
+
+database:
+  type: sqlite
+  useExternal: false
+
+redis:
+  enabled: false
+
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  size: 5Gi
+  storageClassName: local-path
+
+secretRefs:
+  existingSecret: n8n-secrets
+
+# Le chart crée sinon un token aléatoire même avec les runners désactivés.
+taskRunners:
+  enabled: false
+  authToken:
+    existingSecret: n8n-runner-secrets
+    existingSecretKey: N8N_RUNNERS_AUTH_TOKEN
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: n8n.example.invalid
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: n8n-tls
+      hosts:
+        - n8n.example.invalid
+
+editor:
+  url: https://n8n.example.invalid/
+
+webhook:
+  enabled: true
+  url: https://n8n.example.invalid/
+
+config:
+  timezone: Europe/Stockholm
+
+resources:
+  main:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi

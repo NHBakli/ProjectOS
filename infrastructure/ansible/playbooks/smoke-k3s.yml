@@ -1,0 +1,182 @@
+---
+- name: Tester DNS, trafic Pod et persistance sur un cluster K3s validé
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  vars:
+    smoke_namespace: projectos-smoke
+    smoke_manifest_dir: "{{ playbook_dir }}/../../../kubernetes/smoke"
+  tasks:
+    - name: Exiger l'autorisation des ressources temporaires
+      ansible.builtin.assert:
+        that:
+          - k3s_smoke_tests_approved | default(false) | bool
+        fail_msg: Le test crée des Pods et un PVC ; autorisation explicite requise.
+
+    - name: Lire le namespace de test s'il existe
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - get
+          - namespace
+          - "{{ smoke_namespace }}"
+          - -o
+          - json
+      register: smoke_ns
+      changed_when: false
+      failed_when: false
+
+    - name: Refuser un namespace préexistant non géré par Project OS
+      ansible.builtin.assert:
+        that:
+          - >-
+            smoke_ns.rc != 0 or
+            (smoke_ns.stdout | from_json).metadata.get('labels', {}).get('projectos.dev/smoke', '') == 'true'
+        fail_msg: Le namespace de test existe sans son label de propriété ; arrêt.
+
+    - name: Appliquer le namespace de test
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - apply
+          - -f
+          - -
+        stdin: "{{ lookup('ansible.builtin.file', smoke_manifest_dir ~ '/namespace.yaml') }}"
+      register: smoke_namespace_apply
+      changed_when: "'created' in smoke_namespace_apply.stdout or 'configured' in smoke_namespace_apply.stdout"
+
+    - name: Appliquer les ressources de test
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - apply
+          - -f
+          - -
+        stdin: "{{ lookup('ansible.builtin.file', smoke_manifest_dir ~ '/workloads.yaml') }}"
+      register: smoke_workloads_apply
+      changed_when: "'created' in smoke_workloads_apply.stdout or 'configured' in smoke_workloads_apply.stdout"
+
+    - name: Attendre les deux Pods réseau
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - wait
+          - -n
+          - "{{ smoke_namespace }}"
+          - --for=condition=Ready
+          - pod/smoke-server
+          - pod/smoke-client
+          - --timeout=180s
+      changed_when: false
+
+    - name: Attendre le Pod utilisant le PVC
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - rollout
+          - status
+          - -n
+          - "{{ smoke_namespace }}"
+          - deployment/smoke-volume
+          - --timeout=180s
+      changed_when: false
+
+    - name: Tester la résolution DNS de l'API Kubernetes depuis un Pod
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - exec
+          - -n
+          - "{{ smoke_namespace }}"
+          - smoke-client
+          - --
+          - nslookup
+          - kubernetes.default.svc.cluster.local
+      changed_when: false
+
+    - name: Tester HTTP entre Pods via le Service et le DNS interne
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - exec
+          - -n
+          - "{{ smoke_namespace }}"
+          - smoke-client
+          - --
+          - wget
+          - -qO-
+          - http://smoke-server.projectos-smoke.svc.cluster.local:8080/
+      register: smoke_http_response
+      changed_when: false
+
+    - name: Vérifier la réponse HTTP attendue
+      ansible.builtin.assert:
+        that:
+          - smoke_http_response.stdout | trim == 'projectos-smoke'
+
+    - name: Écrire un marqueur sur le PVC de test
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - exec
+          - -n
+          - "{{ smoke_namespace }}"
+          - deployment/smoke-volume
+          - --
+          - touch
+          - /data/projectos-smoke-marker
+      changed_when: true
+
+    - name: Redémarrer uniquement le Deployment de test
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - rollout
+          - restart
+          - -n
+          - "{{ smoke_namespace }}"
+          - deployment/smoke-volume
+      changed_when: true
+
+    - name: Attendre le nouveau Pod utilisant le PVC
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - rollout
+          - status
+          - -n
+          - "{{ smoke_namespace }}"
+          - deployment/smoke-volume
+          - --timeout=180s
+      changed_when: false
+
+    - name: Vérifier que le marqueur existe après redémarrage du Pod
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - exec
+          - -n
+          - "{{ smoke_namespace }}"
+          - deployment/smoke-volume
+          - --
+          - test
+          - -f
+          - /data/projectos-smoke-marker
+      changed_when: false
+
+    - name: Résumer les essais pratiques
+      ansible.builtin.debug:
+        msg: >-
+          DNS interne, HTTP via Service et lecture du PVC après redémarrage du
+          Pod : réussis. Le namespace de test reste présent pour inspection.

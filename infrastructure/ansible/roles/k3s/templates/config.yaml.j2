@@ -1,0 +1,8 @@
+# Managed by Project OS. Aucune clé ni token n'est écrit ici.
+write-kubeconfig-mode: '0600'
+secrets-encryption: true
+bind-address: {{ k3s_api_bind_address | to_json }}
+flannel-backend: {{ k3s_flannel_backend | to_json }}
+disable:
+  - traefik
+  - servicelb

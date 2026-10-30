@@ -1,0 +1,142 @@
+---
+- name: Exiger une décision explicite avant tout contact privilégié avec l'hôte
+  ansible.builtin.assert:
+    that:
+      - k3s_install_approved | bool
+      - k3s_lxc_compatibility_verified | bool
+      - k3s_api_protection_verified | bool
+      - k3s_api_protection_evidence | length >= 20
+      - k3s_flannel_backend in ['vxlan', 'host-gw', 'wireguard-native']
+      - k3s_api_bind_address | length > 0
+      - k3s_api_bind_address not in ['0.0.0.0', '::']
+      - k3s_binary_sha256 is match('^[a-f0-9]{64}$')
+    fail_msg: >-
+      Installation refusée : renseigner les validations LXC/réseau, la preuve du
+      filtrage de TCP 6443, le backend Flannel et l'adresse d'écoute de l'API.
+
+- name: Recueillir les faits minimaux de l'hôte
+  ansible.builtin.setup:
+    gather_subset:
+      - min
+
+- name: Limiter ce rôle à Ubuntu 22.04 sur amd64
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Ubuntu'
+      - ansible_facts['distribution_version'] == '22.04'
+      - ansible_facts['architecture'] == 'x86_64'
+    fail_msg: La version du binaire et le système cible doivent être revus.
+
+- name: Vérifier que le forwarding IPv4 est activé sans le modifier
+  ansible.builtin.command: cat /proc/sys/net/ipv4/ip_forward
+  register: k3s_ipv4_forward
+  changed_when: false
+
+- name: Refuser l'installation si le forwarding IPv4 reste désactivé
+  ansible.builtin.assert:
+    that:
+      - k3s_ipv4_forward.stdout | trim == '1'
+    fail_msg: Le forwarding IPv4 est désactivé ; aucune installation n'est lancée.
+
+- name: Vérifier si une unité K3s existe déjà
+  ansible.builtin.stat:
+    path: /etc/systemd/system/k3s.service
+  register: k3s_unit_before
+
+- name: Vérifier si un binaire K3s existe déjà
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+    checksum_algorithm: sha256
+  register: k3s_binary_before
+
+- name: Recenser les services existants sans les modifier
+  ansible.builtin.service_facts:
+
+- name: Lire une unité K3s existante pour éviter de remplacer une autre installation
+  ansible.builtin.slurp:
+    src: /etc/systemd/system/k3s.service
+  register: k3s_existing_unit
+  when: k3s_unit_before.stat.exists
+
+- name: Refuser une installation K3s non gérée par Project OS
+  ansible.builtin.assert:
+    that:
+      - >-
+        not k3s_unit_before.stat.exists or
+        'Managed by Project OS' in (k3s_existing_unit.content | default('') | b64decode)
+      - not k3s_binary_before.stat.exists or k3s_unit_before.stat.exists
+      - not k3s_binary_before.stat.exists or k3s_binary_before.stat.isreg
+      - "'k3s.service' not in ansible_facts.services or k3s_unit_before.stat.exists"
+    fail_msg: Un binaire ou service K3s préexiste ; inspection manuelle nécessaire.
+
+- name: Refuser un changement de version K3s sans décision explicite
+  ansible.builtin.assert:
+    that:
+      - >-
+        not k3s_binary_before.stat.exists or
+        k3s_binary_before.stat.checksum | default('') == k3s_binary_sha256 or
+        k3s_upgrade_approved | bool
+    fail_msg: Le binaire existant diffère de la version épinglée ; valider la mise à niveau et les sauvegardes.
+
+- name: Lire les ports TCP déjà utilisés
+  ansible.builtin.command: ss -H -ltn
+  register: k3s_tcp_listeners
+  changed_when: false
+
+- name: Refuser de remplacer un autre service sur TCP 6443
+  ansible.builtin.assert:
+    that:
+      - >-
+        k3s_unit_before.stat.exists or
+        not (k3s_tcp_listeners.stdout is search('(?m):6443\\s'))
+    fail_msg: TCP 6443 est déjà utilisé ; identifier le service avant de continuer.
+
+- name: Créer le répertoire de configuration K3s
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Télécharger le binaire K3s épinglé avec vérification SHA-256
+  ansible.builtin.get_url:
+    url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s"
+    dest: /usr/local/bin/k3s
+    checksum: "sha256:{{ k3s_binary_sha256 }}"
+    backup: true
+    owner: root
+    group: root
+    mode: '0755'
+  notify: Redémarrer K3s
+
+- name: Déployer la configuration K3s protégée
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    owner: root
+    group: root
+    mode: '0600'
+    backup: true
+  notify: Redémarrer K3s
+
+- name: Déployer l'unité systemd K3s
+  ansible.builtin.template:
+    src: k3s.service.j2
+    dest: /etc/systemd/system/k3s.service
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  notify:
+    - Recharger systemd
+    - Redémarrer K3s
+
+- name: Appliquer les handlers avant le premier démarrage
+  ansible.builtin.meta: flush_handlers
+
+- name: Activer et démarrer K3s
+  ansible.builtin.systemd_service:
+    name: k3s
+    enabled: true
+    state: started

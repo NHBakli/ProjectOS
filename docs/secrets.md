@@ -37,7 +37,17 @@ Générés par `scripts/generate-secrets.sh plane`, créés par `deploy-plane.ym
 ./scripts/generate-secrets.sh plane    # ou backup, ou n8n
 ```
 
-Le script refuse d'écraser un fichier existant. Utilise toujours le même mot de passe Vault.
+Le script refuse d'écraser un fichier existant. Il refuse aussi un mot de passe Vault qui n'ouvre pas les fichiers déjà présents : **un seul mot de passe pour tout**.
+
+## Erreur « Decryption failed »
+
+Un fichier a été chiffré avec un autre mot de passe. Remets le mot de passe commun (les secrets ne changent pas) :
+
+```bash
+ansible-vault rekey ~/.config/projectos/NOM-DU-FICHIER.vault.yml
+```
+
+Saisis d'abord l'ancien mot de passe, puis le mot de passe commun.
 
 ## Lire un fichier Vault
 

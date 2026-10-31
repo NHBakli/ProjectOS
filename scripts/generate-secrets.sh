@@ -21,10 +21,32 @@ if [[ -e "$out" ]]; then
 fi
 
 umask 077
-mkdir -p "$(dirname "$out")"
+dir="$(dirname "$out")"
+mkdir -p "$dir"
+
+# Un seul mot de passe Vault pour tous les fichiers : sinon un playbook qui en
+# charge plusieurs échoue au déchiffrement.
+unset ANSIBLE_VAULT_PASSWORD_FILE
+read -rsp "Mot de passe Vault (le même pour tous les fichiers) : " vault_pw; echo >&2
+read -rsp "Confirmer : " vault_pw_confirm; echo >&2
+if [[ -z "$vault_pw" || "$vault_pw" != "$vault_pw_confirm" ]]; then
+  echo "Refus : mots de passe vides ou différents." >&2
+  exit 1
+fi
+pw_file="$(mktemp -p /dev/shm 2>/dev/null || mktemp)"
+trap 'rm -f "$pw_file"' EXIT
+printf '%s' "$vault_pw" > "$pw_file"
+
+for existing in "$dir"/*.vault.yml; do
+  [[ -e "$existing" ]] || continue
+  if ! ansible-vault view --vault-password-file "$pw_file" "$existing" >/dev/null 2>&1; then
+    echo "Refus : ce mot de passe n'ouvre pas $existing. Utilise le mot de passe Vault commun." >&2
+    exit 1
+  fi
+done
 
 # Lettres et chiffres uniquement : certains mots de passe sont insérés dans des URL.
-python3 -I - "$kind" <<'PY' | ansible-vault encrypt --output "$out" -
+python3 -I - "$kind" <<'PY' | ansible-vault encrypt --vault-password-file "$pw_file" --output "$out" -
 import secrets
 import string
 import sys

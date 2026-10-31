@@ -54,3 +54,4 @@ Utile si tu écris de nouveaux playbooks :
 - `(... | from_json).items` désigne la méthode Python, pas la clé JSON. Écrire `['items']`.
 - En YAML, `- -` est une liste imbriquée. Pour passer l'argument `-`, écrire `- '-'`.
 - Un NodePort ou un `hostPort` **contourne UFW**. Ne pas en créer.
+- Plusieurs fichiers Vault doivent partager le même mot de passe, sinon un playbook qui les charge ensemble échoue. Le script de génération le vérifie maintenant.

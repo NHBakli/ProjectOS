@@ -42,7 +42,11 @@ Remplace ensuite les valeurs d'exemple dans chaque fichier :
 
 ```bash
 export ANSIBLE_CONFIG=infrastructure/ansible.cfg
+export VPS_IP=1.2.3.4          # remplace par l'IP du VPS
+export VPS_USER=ton-compte     # remplace par ton compte admin
 ./scripts/validate.sh
 ```
+
+Les guides utilisent `$VPS_IP` et `$VPS_USER` dans leurs commandes.
 
 **Résultat attendu :** `Passed: 0 failure(s), 0 warning(s)`.

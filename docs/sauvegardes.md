@@ -11,7 +11,7 @@ Les sauvegardes de Plane sont rapatriées **sur ton poste**, chiffrées.
 | Manifeste | Nombre d'utilisateurs, projets, tickets et fichiers au moment de la sauvegarde |
 
 Les fichiers sont chiffrés sur le VPS (gpg, AES-256) **avant** d'en sortir.
-Destination : `~/projectos-backups/plane-<date>/`.
+Destination : `~/projectos-backups/plane-DATE/`.
 
 ## 1. Créer la phrase de passe (une seule fois)
 
@@ -37,12 +37,12 @@ ansible-playbook -i ~/.config/projectos/hosts.yml --ask-vault-pass \
 
 ## 3. Tester la restauration
 
-Remonte la sauvegarde dans un namespace jetable, compare les chiffres avec le manifeste, puis supprime tout. **La production n'est pas touchée.**
+Teste la **dernière** sauvegarde. Elle est remontée dans un namespace jetable, compare les chiffres avec le manifeste, puis supprime tout. **La production n'est pas touchée.**
 
 ```bash
 ansible-playbook -i ~/.config/projectos/hosts.yml --ask-vault-pass \
   -e restore_test_approved=true \
-  -e backup_dir=$HOME/projectos-backups/plane-<date> \
+  -e backup_dir=$(ls -d $HOME/projectos-backups/plane-* | tail -1) \
   -e @$HOME/.config/projectos/backup.vault.yml \
   -e @$HOME/.config/projectos/plane-secrets.vault.yml \
   infrastructure/ansible/playbooks/restore-test-plane.yml

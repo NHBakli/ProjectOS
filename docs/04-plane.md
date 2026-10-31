@@ -50,7 +50,7 @@ Ouvre `https://plane.<ton-domaine>/god-mode/` et crée le compte.
 | Symptôme | Action |
 |---|---|
 | Le playbook attend longtemps | Normal au 1er lancement (images à télécharger) |
-| Un Pod en erreur | `sudo k3s kubectl -n plane get pods`, puis `sudo k3s kubectl -n plane logs <pod>` |
+| Un Pod en erreur | `sudo k3s kubectl -n plane get pods`, puis `sudo k3s kubectl -n plane logs NOM_DU_POD` |
 | Erreur Vault | Vérifier le mot de passe Vault |
 
 ## Mettre à jour

@@ -155,7 +155,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ title: $json.titre, body: $json.corps, labels: [$json.equipe] }) }}",
+        "jsonBody": "={{ JSON.stringify({ title: $json.titre, body: $json.corps }) }}",
         "options": {}
       },
       "name": "Créer issue GitHub",

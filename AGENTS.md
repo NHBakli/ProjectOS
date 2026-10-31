@@ -27,7 +27,7 @@ Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
 ## La suite (dans l'ordre)
 
 1. **Installer le workflow Plane → GitHub** (`docs/06-plane-github.md`). Choix de l'utilisateur : sens **Plane → GitHub**, création seulement ; **un seul projet Plane** avec labels d'équipe ; organisation GitHub **Flowly-PBS**.
-   - Routage : `frontend` → dépôt `Frontend` + projet 2, `backend` → `Backend` + projet 1, `mobile` → `Mobile` + projet 3, `devops` → `DevOps` (dépôt à créer par l'utilisateur) + projet 5.
+   - Routage : `frontend` → dépôt `Frontend` + projet 2, `backend` → `Backend` + projet 1, `mobile` → `Mobile` + projet 3, `devops` → `DevOps` (créé le 2026-10-31) + projet 5. Seuls les labels **Plane** comptent ; aucun label n'est posé côté GitHub.
    - Anti-doublon : lien GitHub enregistré dans le ticket Plane, vérifié avant création. Signature HMAC du webhook Plane vérifiée.
    - Vérifié dans le code de Plane v1.4.2 (`webhook_task.py`, API `work-items/…/links/`, en-tête `X-Api-Key`). Testé dans n8n 2.44.5 local avec de fausses API. **Pas encore testé en vrai** : Plane → n8n via l'URL publique, token GitHub, ajout aux projets.
 2. **Sauvegardes** : copie hors du poste (disque externe ou cloud), puis automatisation. Le datastore K3s n'est pas encore sauvegardé.

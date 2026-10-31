@@ -18,24 +18,19 @@ Fichier à importer : [`n8n/workflows/plane-vers-github.json`](../n8n/workflows/
 3. Pour chaque label d'équipe, n8n regarde les liens du ticket Plane. Si un lien vers une issue de ce dépôt existe déjà, il ne fait rien : **pas de doublon**.
 4. Sinon : création de l'issue, lien ajouté dans le ticket Plane, ajout au projet GitHub.
 
-Le label ne tient pas compte des majuscules. Un ticket avec deux labels (`frontend` + `backend`) crée deux issues.
+Le label Plane ne tient pas compte des majuscules. Un ticket avec deux labels (`frontend` + `backend`) crée une issue dans chaque dépôt, et chacune est ajoutée à son projet GitHub.
 
 ## Étapes
 
 ### Côté GitHub
 
-**1. Créer le dépôt DevOps et les labels**
+**1. Créer le dépôt DevOps** (fait le 2026-10-31)
 
 ```bash
 gh repo create Flowly-PBS/DevOps --private
-gh label create frontend -R Flowly-PBS/Frontend
-gh label create mobile -R Flowly-PBS/Mobile
-gh label create devops -R Flowly-PBS/DevOps
 ```
 
-`backend` existe déjà dans `Backend`.
-
-**Attendu :** chaque commande répond `✓ Label "..." created`.
+Pas besoin de labels dans GitHub : c'est le label **Plane** qui choisit le dépôt.
 
 **2. Créer le token GitHub**
 

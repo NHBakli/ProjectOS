@@ -1,117 +1,111 @@
-# AGENTS.md — Instructions permanentes pour Codex
+# AGENTS.md — Contexte et règles pour les agents IA
 
-## Mission
+À lire en entier avant toute action. Source unique pour tous les agents (Codex, Claude Code…) : `CLAUDE.md` importe ce fichier.
 
-Tu travailles sur **Project OS**, une plateforme DevOps auto-hébergée, versionnée dans Git, qui doit déployer **K3s + Plane + n8n** sur un VPS Linux. Le projet est principalement **Infrastructure as Code**, pas un développement from scratch de l'application Plane.
+## Le projet
 
-**Résultat attendu :** une V1 reproductible, documentée, observable, sauvegardable, avec accès web HTTPS et workflows d'automatisation GitHub ↔ Plane. L'utilisateur souhaite travailler rapidement avec Codex comme partenaire d'implémentation, tout en conservant la maîtrise des choix techniques et de l'application des changements sur le VPS.
+**Project OS** : plateforme de gestion de projets auto-hébergée, décrite en Infrastructure as Code.
+**K3s** (un nœud) + **Plane** (projets, tickets) + **n8n** (automatisations GitHub ↔ Plane), sur un VPS.
+Tout s'installe depuis le poste local avec **Ansible**. On n'écrit pas d'application : on assemble et on exploite.
 
-Lis `README.md` et inspecte le dépôt avant de commencer. Le README décrit l'intention et la roadmap ; **le système de fichiers et les tests priment pour l'état réellement implémenté**.
+Utilisateur : francophone, travaille vite, garde la main sur les choix et lance lui-même les commandes qui modifient le VPS. Équipe prévue : 5–7 personnes. Pas de haute disponibilité.
 
-## Contexte confirmé
+## État au 2026-10-31
 
-- **AegisOps est un projet distinct, déjà utilisé pour préparer et durcir le VPS.** Ne pas recréer le hardening de l'hôte, changer les comptes ou réécrire la configuration SSH.
-- Hôte cible (vérifié en lecture seule le 2026-10-30) : **VM KVM**, Ubuntu 24.04.5, noyau `6.8.0-147-generic`, 9 vCPU, ~11 Gio de RAM, ~123 Go libres. L'ancien conteneur LXC/Proxmox n'est plus la cible.
-- VPS avec **IPv4 publique** ; compte non-root administrateur avec sudo. Ne jamais codifier l'IP publique, l'alias SSH ou des identifiants réels dans des fichiers suivis par Git.
-- cgroups v2 (cpu, memory), systemd PID 1, namespaces réseau, `/dev/net/tun` présent ; `/proc/sys` accessible en écriture ; `net.ipv4.ip_forward` à `0` ; modules `overlay`, `br_netfilter`, `vxlan` disponibles mais non chargés.
-- **UFW actif** (règles AegisOps), politique `INPUT DROP`, seul TCP 22 autorisé ; **Fail2ban actif** (`f2b-sshd`). TCP 6443 expire depuis l'extérieur. Les règles fournisseur restent inconnues.
-- **Aucun Kubernetes installé** sur la VM (ni K3s, ni kubelet, ni containerd). La compatibilité containerd/CNI/stockage reste à prouver par des essais.
-- Utilisation prévue : projet personnel, équipe éventuelle de **5–7 utilisateurs** ; cluster **single-node** initial, sans promesse de haute disponibilité.
+| Brique | État |
+|---|---|
+| VPS | VM KVM, Ubuntu 24.04.5, 9 vCPU, ~11 Gio RAM. UFW (AegisOps) + Fail2ban. Ports publics : 22, 80, 443. |
+| K3s `v1.37.1+k3s1` | ✅ Installé par le rôle Ansible, idempotent, survit au reboot. API 6443, kubelet et NodePorts fermés depuis Internet. |
+| HTTPS | ✅ Traefik (fourni par K3s) + cert-manager `v1.21.3` + Let's Encrypt. Domaine **provisoire sslip.io**. |
+| Plane CE `v1.4.2` (chart `plane-ce` 1.8.5) | ✅ En ligne, compte admin créé |
+| n8n `2.44.5` (chart 1.17.0, SQLite) | ✅ En ligne, compte propriétaire créé |
+| Sauvegardes | ✅ Plane et n8n chiffrées (gpg) vers le poste, restaurations testées. Lancement manuel. |
 
-## Architecture voulue
+Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
 
-1. **Ansible** prépare uniquement les prérequis spécifiques à K3s et installe/configure le cluster sans réappliquer AegisOps.
-2. **K3s**, avec configuration versionnée, cluster single-node, kubeconfig protégé, API Kubernetes non publique.
-3. **Helm** déploie Plane et ses dépendances, puis n8n, depuis des versions/chart/values épinglés.
-4. **Ingress / HTTPS** fournit les accès web ; pas d'exposition directe des bases, brokers ou interfaces d'admin.
-5. **Stockage persistant + sauvegardes testées** protègent PostgreSQL, fichiers, paramètres et credentials n8n.
-6. **CI**, puis éventuellement **GitOps** (Flux ou Argo CD) quand le cluster et les restaurations sont fiables. Ne pas introduire GitOps par réflexe dès le premier commit.
+## La suite (dans l'ordre)
 
-Plane possède déjà frontend, API/backend et workers. Ne pas écrire un « backend Project OS » parallèle sans besoin explicite. n8n orchestre les automatisations et interactions GitHub/Plane (ex. router les tickets `frontend` et `backend`). Vérifier les API et webhooks réellement disponibles avant de concevoir les workflows.
+1. **Premier workflow n8n GitHub → Plane.** Proposition faite à l'utilisateur, **réponses attendues** :
+   - Sens : une issue GitHub crée un ticket Plane (lien vers l'issue, **idempotent**, sans doublon).
+   - Quel dépôt GitHub, quel projet Plane ?
+   - Accès créés par l'utilisateur et saisis **directement dans n8n** : clé API Plane, token GitHub limité au dépôt ou secret de webhook.
+   - Avant de concevoir : vérifier l'API réelle de Plane v1.4.2 et les webhooks GitHub. Livrer un workflow à importer + un guide pas à pas.
+   - Ensuite : tri des tickets par label `frontend` / `backend`.
+2. **Sauvegardes** : copie hors du poste (disque externe ou cloud), puis automatisation. Le datastore K3s n'est pas encore sauvegardé.
+3. **Vrai domaine** (ou DuckDNS) avant d'inviter l'équipe. Il faudra changer les URL de Plane, n8n et des webhooks.
+4. Plus tard : observabilité légère, CI de déploiement, GitOps seulement quand les restaurations sont fiables. n8n signale que le mode « task runner interne » sera retiré : passer en runners externes lors d'une mise à jour.
 
-**Édition de Plane :** ne pas supposer qu'un Helm chart officiel déploie la Community Edition. Vérifier sur la documentation officielle la disponibilité actuelle des éditions, charts et obligations de licence ; choisir la voie compatible avec les exigences et coûts du projet avant de rédiger les valeurs Helm.
+## Comment on travaille
 
-## Priorités d'implémentation
+1. Écrire et valider **en local** : `./scripts/validate.sh` (yamllint, ansible-lint, syntax-check). Pour Helm : `./scripts/validate-helm.sh` (Helm 3.22.1).
+2. Tester les rendus Jinja/Helm en local avec de fausses valeurs avant de livrer.
+3. Committer : message en français, un commit par incrément cohérent.
+4. Donner à l'utilisateur **les commandes exactes** à lancer et le **résultat attendu**. Il colle la sortie, on analyse.
+5. L'agent peut faire des vérifications **en lecture seule** sur le VPS : inventaire privé `~/.config/projectos/hosts.yml` (IP, compte et clé SSH, `sudo -n` disponible), `k3s kubectl get/describe/logs`, tests `nc`/`curl` depuis le poste. Toute modification passe par un playbook lancé avec l'accord de l'utilisateur.
+6. L'agent **ne connaît pas le mot de passe Vault** : les playbooks qui chargent un fichier `*.vault.yml` sont lancés par l'utilisateur (`--ask-vault-pass`).
+7. Mettre à jour `README.md` et `docs/` à chaque changement. **Style imposé** : court, phrases simples, étapes numérotées, commandes copiables, « Attendu », « En cas de problème », « Retour arrière ». Pas de `<...>` dans les commandes : bash le lit comme une redirection.
 
-### Phase 1 — Repo et compatibilité (commencer ici)
-- Inspecter les fichiers et Git ; ne pas détruire ni réorganiser inutilement un dépôt existant.
-- Préparer structure IaC, `.gitignore`, inventaire d'exemple, documentation et validation statique.
-- Implémenter des **préchecks non destructifs** pour la compatibilité LXC : cgroups, mounts, capacités, réseau, overlay, systemd, prérequis K3s.
-- Produire un résultat clair : `READY`, `BLOCKED` ou `NEEDS_VALIDATION`, sans masquer les limites.
-- Documenter les changements éventuellement requis côté hôte Proxmox ou fournisseur ; **ne pas** forcer LXC privilégié ni désactiver ses protections.
+## Fichiers clés
 
-### Phase 2 — K3s
-- Rôle Ansible idempotent, configuration via template (`/etc/rancher/k3s/config.yaml`), version fixée, handlers, tests de syntaxe.
-- Décider Flannel (VXLAN / host-gw / autre) **après** validation pratique ; ne pas préjuger que l'absence de TUN est bloquante ni que host-gw résout toutes les limitations LXC.
-- Vérifier l'API 6443 et les ports d'exposition avant l'installation. L'API doit être **inaccessible depuis Internet** ; ne pas se reposer uniquement sur l'authentification Kubernetes.
-- Valider réellement : `kubectl get nodes`, Pods système, DNS, communication inter-Pods, PVC, redémarrage.
+| Chemin | Rôle |
+|---|---|
+| `infrastructure/ansible/roles/k3s/` | Installation de K3s et préparation de l'hôte (modules, sysctl, UFW) |
+| `infrastructure/ansible/playbooks/` | `deploy-*`, `backup*.yml`, `restore-test-*`, `verify-k3s`, `smoke-*` |
+| `helm/*-values.yaml`, `helm/charts.lock.yaml`, `helm/charts/` | Valeurs, versions épinglées, archive n8n vendorisée |
+| `kubernetes/` | Manifests cert-manager et smoke tests |
+| `scripts/generate-secrets.sh plane\|backup\|n8n` | Crée les secrets directement chiffrés (Vault), un seul mot de passe |
+| `~/.config/projectos/` (hors Git) | `hosts.yml`, `k3s-approval.yml`, `platform.yml`, `*.vault.yml` |
+| `~/projectos-backups/` (hors Git) | Sauvegardes chiffrées |
 
-### Phase 3 — Exposition et stockage
-- Choisir et documenter la gestion des adresses, DNS, TLS, Secrets, Ingress, StorageClass, PVC et sauvegardes.
-- Tester la restauration d'un volume et d'une base avant d'héberger des données importantes.
+Les déploiements passent par le **CRD `HelmChart` de K3s** (pas de Helm sur le poste). K3s ne lit pas les charts OCI : l'archive n8n est dans `helm/charts/`, son SHA-256 est vérifié.
 
-### Phase 4 — Plane
-- Vérifier l'édition et les licences ; épingler un chart et ses versions.
-- Déployer et tester frontend, API, workers, jobs/migrations, base/cache/queue/stockage selon les dépendances du chart retenu.
-- Configurer HTTPS, comptes, volumes et ressources proportionnées au serveur.
+## Pièges déjà rencontrés
 
-### Phase 5 — n8n + GitHub
-- Installer n8n avec persistance et `N8N_ENCRYPTION_KEY` fournie de manière sécurisée.
-- Ajouter des webhooks/API GitHub et Plane ; construire d'abord un flux vérifiable et idempotent (éviter les doublons), puis le routage par labels `frontend`/`backend`.
-- Ne jamais écrire de tokens en dur ou dans des logs.
-
-### Phase 6 — Opérations
-- Documentation de démarrage, de montée de version, des sauvegardes et de la restauration.
-- Logs, métriques et alertes adaptés aux ressources ; CI pour lint / templates ; GitOps optionnel après validation.
+- `(... | from_json).items` désigne la méthode Python : écrire `['items']`.
+- En YAML, `- -` est une liste imbriquée : écrire `- '-'`.
+- Dans une chaîne Jinja, `'\1'` devient le caractère `\x01`.
+- Les NodePorts et `hostPort` **contournent UFW** (DNAT) : NodePorts limités à `127.0.0.1`, n'exposer que Traefik.
+- `kubectl apply --server-side` répond toujours `serverside-applied` : utiliser `kubectl diff` pour l'idempotence.
+- Le CLI n8n écrit ses journaux sur stdout : compter dans la base (`node:sqlite`, lecture seule), pas dans sa sortie.
+- Plusieurs fichiers Vault chargés ensemble doivent avoir le **même** mot de passe. Récupération possible depuis les Secrets du cluster (`docs/secrets.md`).
+- La page `/god-mode/` de Plane et la première page de n8n donnent les droits admin au premier visiteur : créer les comptes tout de suite.
 
 ## Règles de développement
 
-- **Local-first :** écrire dans l'IDE et Git. Pas de modification manuelle permanente des fichiers applicatifs sur le VPS.
-- **Infra déclarative :** réutiliser les modules Ansible et charts existants. Éviter `shell`/`command` pour des opérations déjà couvertes par des modules idempotents, sauf justification.
-- **Simplicité :** une architecture minimaliste sur un nœud ; pas de composants supplémentaires sans bénéfice concret.
-- **Versionning :** épingler versions d'images, charts, collections et K3s ; éviter `latest`.
-- **Style :** fichiers YAML propres, noms de tâches explicites, variables documentées, validation/lint, commentaires utiles mais concis.
-- **Préservation :** ne pas effacer fichiers/règles/volumes existants ni remplacer des outils déjà installés sans raison et accord.
-- **Distinguer constat et hypothèse :** ne pas inventer des ressources existantes, des versions, un fonctionnement de chart ou des tests réussis.
-- **Changements ciblés :** livrer des incréments cohérents, explicables, testables, sans gros refactoring prématuré.
-- **Documentation :** mettre à jour `README.md` / `docs/` lorsque les commandes, architecture ou procédures changent.
+- **Local-first :** tout dans Git. Pas de modification manuelle permanente sur le VPS.
+- **Déclaratif :** modules Ansible et charts existants. `shell`/`command` seulement si justifié, avec `changed_when`.
+- **Simplicité :** pas de composant sans bénéfice concret.
+- **Versions épinglées** partout (images, charts, collections, K3s). Jamais `latest`.
+- **Préservation :** ne pas effacer fichiers, règles ou volumes existants sans accord.
+- **Constat ≠ hypothèse :** ne pas inventer versions, comportements de chart ou tests réussis. Dire clairement ce qui n'a pas été exécuté.
+- **Changements ciblés**, testables, sans gros refactoring prématuré.
 
 ## Sécurité — règles strictes
 
-1. **Aucune modification de SSH, des utilisateurs, de Fail2ban ou des règles de sécurité AegisOps sans demande explicite.**
-2. **Ne pas installer/démarrer K3s sur l'hôte public avant d'avoir établi et vérifié la protection de l'API TCP 6443.** Ne pas ouvrir 6443 au monde. Préférer un accès administratif par SSH tunnel ou réseau privé.
-3. **Ne pas réinitialiser iptables, nftables ou UFW.** Les composants Kubernetes peuvent ajouter des règles ; évaluer les interactions avec l'existant et documenter le rollback.
-4. **Ne pas augmenter arbitrairement les privilèges LXC.** Pas de conversion en conteneur privilégié, pas de retrait de confinement, pas d'accès host indiscriminé.
-5. **Jamais de secrets dans Git ou dans la sortie du terminal.** Exclure kubeconfig, token K3s, clés SSH, fichiers `.env` réels, credentials n8n, mots de passe et manifests Secrets en clair. Employer un stockage de secrets chiffré.
-6. **Aucune action sur le VPS risquant d'interrompre le réseau, SSH, les données ou de provoquer un redémarrage sans approbation explicite**, plan de retour arrière et accès de secours confirmé.
-7. **Pas de `curl | sh` opaque exécuté sans validation.** Si un installateur est utilisé, vérifier la source, figer la version et documenter le comportement.
-8. **Préserver les données :** PVC, sauvegardes, migration, restauration ; pas de suppression forcée des ressources persistantes.
-9. **Les exécutions de précheck doivent rester en lecture seule.** Les opérations qui créent des interfaces, chargent des modules ou modifient des sysctls doivent être des étapes séparées et approuvées.
-10. Les services web accessibles publiquement ne doivent exposer que les ports nécessaires, sous TLS et authentification adaptées.
+1. **Ne pas toucher** à SSH, aux comptes, à Fail2ban ni aux règles AegisOps sans demande explicite.
+2. **L'API Kubernetes (6443) reste fermée** sur Internet. Accès admin par tunnel SSH.
+3. **Ne jamais réinitialiser** iptables, nftables ou UFW.
+4. **Pas d'augmentation arbitraire de privilèges** (conteneurs privilégiés, `hostPath`, `hostNetwork`…).
+5. **Aucun secret dans Git ni dans la sortie du terminal** : IP publique, kubeconfig, tokens, clés, mots de passe, Secrets en clair. Secrets dans Ansible Vault, tâches sensibles sous `no_log`.
+6. **Aucune action risquant le réseau, SSH, les données ou un redémarrage** sans accord explicite, retour arrière et accès de secours.
+7. **Pas de `curl | sh`.** Sources vérifiées, versions figées, empreintes contrôlées.
+8. **Préserver les données :** sauvegarder avant toute mise à jour. Ne jamais supprimer un PVC ou un namespace applicatif sans restauration testée.
+9. Les vérifications restent **en lecture seule**. Les tests qui créent des ressources sont des étapes séparées, approuvées, nettoyées ensuite.
+10. N'exposer publiquement que le nécessaire, sous TLS et authentification.
 
-## Validation et définition du terminé
+## Définition du terminé
 
-Avant de qualifier une modification de terminée :
+- `validate.sh` passe (et `validate-helm.sh` si Helm est concerné).
+- Aucune fuite de secret dans le diff (`git diff | grep` sur l'IP).
+- Idempotence vérifiée pour ce qui modifie l'hôte (2ᵉ exécution : `changed=0`).
+- Tests réels sur le VPS signalés **non effectués** tant qu'ils ne l'ont pas été.
+- Déploiement, retour arrière et sauvegarde documentés.
 
-- Syntaxe YAML / Ansible vérifiée ; `ansible-lint` quand disponible.
-- Manifests Kubernetes validés (`kubectl --dry-run=client` là où applicable, lint Helm, schémas) sans dépendre d'un cluster pour les tests statiques.
-- `helm template` et `helm lint` passés sur les charts/values retenus lorsque Helm est utilisé.
-- Aucune fuite de secrets dans les diffs ou le dépôt.
-- Idempotence testée pour les rôles modifiant l'hôte (deux exécutions contrôlées, seconde sans modification inattendue).
-- Tests réels sur le VPS/K3s signalés comme **non effectués** tant qu'ils n'ont pas été exécutés.
-- Déploiement et retour arrière documentés ; persistance et restauration vérifiées avant usage en production.
+## Format des réponses
 
-## Format des réponses Codex
-
-Pour chaque tâche, fournis :
-1. **Ce qui a été changé**, avec chemins de fichiers.
-2. **Pourquoi** (principaux compromis techniques).
-3. **Tests lancés et résultats** ; sépare clairement ceux non exécutés.
-4. **Risques / prérequis** et éventuelle action à approuver sur le VPS.
-5. **Prochaine étape minimale**.
-
-Ne redemande pas des informations déjà présentes dans le dépôt ou ce fichier. Si un paramètre essentiel n'est pas connu (domaine, certificats, édition Plane, politique de sauvegarde), utilise un exemple non secret et signale explicitement la configuration à fournir avant déploiement.
-
-## Première mission à exécuter
-
-**Inspecte le dépôt Project OS avant toute implémentation.** Confirme sa structure et l'état réel des fichiers. Propose puis réalise la **Phase 1** : squelette IaC minimal, inventaire d'exemple sûr, validations statiques et playbook de prérequis K3s **en lecture seule**. Ne déploie rien sur le VPS et ne touche pas à AegisOps. Fournis les commandes de test local et un compte-rendu des éléments encore incertains concernant LXC.
+Court et en français :
+1. Ce qui a changé (fichiers).
+2. Pourquoi (en une ou deux phrases).
+3. Tests lancés et résultats ; ce qui n'a pas été testé.
+4. Commandes à lancer par l'utilisateur, avec le résultat attendu.
+5. Prochaine étape.

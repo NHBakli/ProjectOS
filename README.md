@@ -35,6 +35,7 @@ Suis les guides dans l'ordre :
 - [Secrets](docs/secrets.md) : où ils sont et comment ils sont créés.
 - [Sauvegardes](docs/sauvegardes.md) : quoi sauvegarder.
 - [Choix techniques](docs/decisions.md) : ce qu'on a choisi, et pourquoi.
+- [AGENTS.md](AGENTS.md) : contexte et règles pour les agents IA (Codex, Claude Code…).
 
 ## Architecture
 

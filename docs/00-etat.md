@@ -28,7 +28,7 @@ Mis à jour le 2026-10-31.
 
 ## Ce qui reste
 
-1. Installer le workflow Plane → GitHub (prêt, testé en local) → [06-plane-github.md](06-plane-github.md)
+1. Workflow Plane → GitHub : corriger l'ajout au projet GitHub, puis installer la traduction DeepL → [06-plane-github.md](06-plane-github.md)
 2. Copier les sauvegardes hors du poste, puis les automatiser → [sauvegardes.md](sauvegardes.md)
 3. Passer à un vrai domaine avant d'inviter l'équipe → [03-https.md](03-https.md)
 
@@ -47,6 +47,8 @@ Mis à jour le 2026-10-31.
 | 2026-10-31 | n8n déployé, certificat valide, compte propriétaire créé. Sauvegarde n8n et test de restauration préparés. |
 | 2026-10-31 | Fichier Vault n8n recréé depuis le Secret du cluster (mot de passe différent à la création). Test de restauration n8n réussi. |
 | 2026-10-31 | Sens choisi : Plane → GitHub, routage par label vers les dépôts de Flowly-PBS. Workflow écrit d'après le code de Plane v1.4.2, testé dans n8n 2.44.5 local (7 cas, 0 échec). Pas encore installé. |
+| 2026-10-31 | Workflow installé. Test réel : issue `Frontend#47` créée avec le lien Plane, mais **pas ajoutée** au projet GitHub « Frontend Team » (cause à lire dans l'exécution n8n). |
+| 2026-10-31 | Traduction FR → EN par DeepL API Free ajoutée au workflow (original FR replié). Testée en local (8 cas, 0 échec). Pas encore installée. |
 | 2026-10-31 | 1ʳᵉ sauvegarde Plane rapatriée (chiffrée). Test de restauration réussi : données identiques (2 utilisateurs, 1 projet, 7 tickets). Aucun fichier joint à ce moment-là. |
 
 ## Bugs corrigés en route

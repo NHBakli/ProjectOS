@@ -95,7 +95,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ===== À ADAPTER (dans n8n, pas dans Git) =====\nconst PLANE_PUBLIC_URL = 'https://plane.TON-DOMAINE'; // adresse de Plane, sans / final\nconst PLANE_PROJECT_ID = 'ID-DU-PROJET-PLANE';        // UUID du projet Plane Flowly\n// ===============================================\nconst PLANE_API_URL = 'http://plane-app-api.plane.svc.cluster.local:8000';\nconst GITHUB_ORG = 'Flowly-PBS';\n\n// Label Plane -> dépôt GitHub et projet GitHub (ID GraphQL du projet).\nconst EQUIPES = {\n  frontend: { repo: 'Frontend', projet: 'PVT_kwDOD8weaM4Bjzd_' }, // projet 2\n  backend:  { repo: 'Backend',  projet: 'PVT_kwDOD8weaM4Bjr2x' }, // projet 1\n  mobile:   { repo: 'Mobile',   projet: 'PVT_kwDOD8weaM4BjzeI' }, // projet 3\n  devops:   { repo: 'DevOps',   projet: 'PVT_kwDOD8weaM4BkSMk' }, // projet 5\n};\n\nconst p = $('Webhook Plane').first().json.body || {};\nconst d = p.data || {};\nconst champ = (p.activity || {}).field;\n\n// Seulement : un ticket créé, ou ses labels modifiés, dans le bon projet.\nconst cree = ['created', 'create'].includes(p.action);\nconst labelsModifies = ['updated', 'update'].includes(p.action)\n  && ['label_ids', 'labels'].includes(champ);\nif (p.event !== 'issue' || !(cree || labelsModifies)) return [];\nif (d.project !== PLANE_PROJECT_ID || !d.id) return [];\n\nconst noms = new Set((d.labels || [])\n  .map((l) => (l && typeof l === 'object' ? String(l.name || '') : ''))\n  .map((n) => n.trim().toLowerCase()));\n\nconst slug = p.workspace_slug;\nconst lienPlane = `${PLANE_PUBLIC_URL.replace(/\\/+$/, '')}/${slug}/projects/${d.project}/issues/${d.id}`;\nconst texte = String(d.description_stripped || '').trim();\nconst corps = [\n  texte || '_Pas de description dans Plane._',\n  '',\n  '---',\n  `Ticket Plane : ${lienPlane}`,\n  `<!-- plane-work-item: ${d.id} -->`,\n].join('\\n');\n\nreturn Object.entries(EQUIPES)\n  .filter(([label]) => noms.has(label))\n  .map(([label, e]) => ({\n    json: {\n      plane_api: PLANE_API_URL,\n      slug,\n      project_id: d.project,\n      issue_id: d.id,\n      equipe: label,\n      github_org: GITHUB_ORG,\n      repo: e.repo,\n      projet_github: e.projet,\n      prefixe: `https://github.com/${GITHUB_ORG}/${e.repo}/issues/`,\n      titre: String(d.name || 'Sans titre'),\n      corps,\n    },\n  }));\n"
+        "jsCode": "// ===== À ADAPTER (dans n8n, pas dans Git) =====\nconst PLANE_PUBLIC_URL = 'https://plane.TON-DOMAINE'; // adresse de Plane, sans / final\nconst PLANE_PROJECT_ID = 'ID-DU-PROJET-PLANE';        // UUID du projet Plane Flowly\n// ===============================================\nconst PLANE_API_URL = 'http://plane-app-api.plane.svc.cluster.local:8000';\nconst GITHUB_ORG = 'Flowly-PBS';\n\n// Label Plane -> dépôt GitHub et projet GitHub (ID GraphQL du projet).\nconst EQUIPES = {\n  frontend: { repo: 'Frontend', projet: 'PVT_kwDOD8weaM4Bjzd_' }, // projet 2\n  backend:  { repo: 'Backend',  projet: 'PVT_kwDOD8weaM4Bjr2x' }, // projet 1\n  mobile:   { repo: 'Mobile',   projet: 'PVT_kwDOD8weaM4BjzeI' }, // projet 3\n  devops:   { repo: 'DevOps',   projet: 'PVT_kwDOD8weaM4BkSMk' }, // projet 5\n};\n\nconst p = $('Webhook Plane').first().json.body || {};\nconst d = p.data || {};\nconst champ = (p.activity || {}).field;\n\n// Seulement : un ticket créé, ou ses labels modifiés, dans le bon projet.\nconst cree = ['created', 'create'].includes(p.action);\nconst labelsModifies = ['updated', 'update'].includes(p.action)\n  && ['label_ids', 'labels'].includes(champ);\nif (p.event !== 'issue' || !(cree || labelsModifies)) return [];\nif (d.project !== PLANE_PROJECT_ID || !d.id) return [];\n\nconst noms = new Set((d.labels || [])\n  .map((l) => (l && typeof l === 'object' ? String(l.name || '') : ''))\n  .map((n) => n.trim().toLowerCase()));\n\nconst slug = p.workspace_slug;\nconst lienPlane = `${PLANE_PUBLIC_URL.replace(/\\/+$/, '')}/${slug}/projects/${d.project}/issues/${d.id}`;\nconst texte = String(d.description_stripped || '').trim();\n\nreturn Object.entries(EQUIPES)\n  .filter(([label]) => noms.has(label))\n  .map(([label, e]) => ({\n    json: {\n      plane_api: PLANE_API_URL,\n      slug,\n      project_id: d.project,\n      issue_id: d.id,\n      equipe: label,\n      github_org: GITHUB_ORG,\n      repo: e.repo,\n      projet_github: e.projet,\n      prefixe: `https://github.com/${GITHUB_ORG}/${e.repo}/issues/`,\n      titre: String(d.name || 'Sans titre'),\n      texte,\n      lien_plane: lienPlane,\n    },\n  }));\n"
       },
       "name": "Équipes à traiter",
       "type": "n8n-nodes-base.code",
@@ -137,6 +137,39 @@
     {
       "parameters": {
         "method": "POST",
+        "url": "https://api-free.deepl.com/v2/translate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: [$json.titre].concat($json.texte ? [$json.texte] : []), target_lang: 'EN-US', preserve_formatting: true }) }}",
+        "options": {}
+      },
+      "name": "Traduire (DeepL)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        -100
+      ],
+      "onError": "continueRegularOutput",
+      "notes": "Identifiant à choisir : DeepL. En cas d'échec, l'issue est créée en français."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Titre et description en anglais, original français replié en bas.\n// Si DeepL a échoué, on garde le français et on le signale.\nconst tickets = $('Pas encore sur GitHub').all();\nreturn $input.all().map((reponse, i) => {\n  const t = tickets[i].json;\n  const tr = (reponse.json.translations || []).map((x) => x.text);\n  const ok = tr.length > 0;\n  const titre = ok ? tr[0] : t.titre;\n  const texte = ok ? (t.texte ? tr[1] : '') : t.texte;\n  const corps = [\n    ok ? '' : '> ⚠️ Translation unavailable (DeepL): original French text.\\n',\n    texte || '_No description in Plane._',\n    '',\n    '<details><summary>Original (FR)</summary>',\n    '',\n    `**${t.titre}**`,\n    '',\n    t.texte || '_Pas de description._',\n    '',\n    '</details>',\n    '',\n    '---',\n    `Plane ticket: ${t.lien_plane}`,\n    `<!-- plane-work-item: ${t.issue_id} -->`,\n  ].join('\\n').replace(/^\\n/, '');\n  return { json: { ...t, titre_en: titre, corps }, pairedItem: { item: i } };\n});\n"
+      },
+      "name": "Issue en anglais",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
         "url": "=https://api.github.com/repos/{{ $json.github_org }}/{{ $json.repo }}/issues",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -155,14 +188,14 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ title: $json.titre, body: $json.corps }) }}",
+        "jsonBody": "={{ JSON.stringify({ title: $json.titre_en, body: $json.corps }) }}",
         "options": {}
       },
       "name": "Créer issue GitHub",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1540,
+        1980,
         -100
       ],
       "notes": "Identifiant à choisir : GitHub token"
@@ -182,7 +215,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1760,
+        2200,
         -100
       ],
       "notes": "Identifiant à choisir : Plane API"
@@ -215,7 +248,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1980,
+        2420,
         -100
       ],
       "notes": "Identifiant à choisir : GitHub token"
@@ -229,7 +262,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2200,
+        2640,
         -100
       ]
     }
@@ -312,7 +345,7 @@
       "main": [
         [
           {
-            "node": "Créer issue GitHub",
+            "node": "Traduire (DeepL)",
             "type": "main",
             "index": 0
           }
@@ -346,6 +379,28 @@
         [
           {
             "node": "Contrôle projet GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traduire (DeepL)": {
+      "main": [
+        [
+          {
+            "node": "Issue en anglais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Issue en anglais": {
+      "main": [
+        [
+          {
+            "node": "Créer issue GitHub",
             "type": "main",
             "index": 0
           }

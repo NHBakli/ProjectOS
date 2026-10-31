@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Teste n8n/workflows/plane-vers-github.json dans un n8n local (Docker),
-# face à de fausses API Plane et GitHub. Ne touche ni au VPS ni à GitHub.
+# face à de fausses API Plane, GitHub et DeepL. Ne touche ni au VPS ni à GitHub.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -28,6 +28,7 @@ sortie, api = sys.argv[1], sys.argv[2]
 s = open("n8n/workflows/plane-vers-github.json", encoding="utf-8").read()
 s = s.replace("http://plane-app-api.plane.svc.cluster.local:8000", api)
 s = s.replace("https://api.github.com", api + "/github")
+s = s.replace("https://api-free.deepl.com", api + "/deepl")
 s = s.replace("COLLER_ICI_LE_SECRET_DU_WEBHOOK_PLANE", "secret-test")
 w = json.loads(s)
 w["id"] = "testPlaneGithub1"
@@ -61,28 +62,29 @@ attendre
 sleep 5
 
 echecs=0
-verifier() { # cas, secret, appels GitHub attendus
+verifier() { # cas, secret, issues attendues, texte attendu dans les issues créées (facultatif)
   local avant apres creees
   avant=$(wc -l <"$travail/appels.log")
   python3 n8n/tests/envoyer-evenement-plane.py "$1" "$2" >/dev/null
   sleep 5
   apres=$(tail -n +$((avant + 1)) "$travail/appels.log")
   creees=$(grep -c '"p": "/github/repos/' <<<"$apres" || true)
-  if [[ "$creees" == "$3" ]]; then
+  if [[ "$creees" == "$3" ]] && { [[ -z "${4:-}" ]] || grep '"p": "/github/repos/' <<<"$apres" | grep -qF -- "$4"; }; then
     echo "OK    $1 ($2) : $creees issue(s) créée(s)"
   else
-    echo "ÉCHEC $1 ($2) : $creees issue(s) créée(s), attendu $3"
+    echo "ÉCHEC $1 ($2) : $creees issue(s) créée(s), attendu $3 ${4:+avec « $4 »}"
     echecs=$((echecs + 1))
   fi
 }
 
-verifier creation secret-test 2          # frontend + backend
+verifier creation secret-test 2 '"title": "EN: Écran'   # frontend + backend, titre traduit
 verifier rejeu secret-test 0             # liens déjà présents
 verifier ajout_mobile secret-test 1      # seul mobile est nouveau
 verifier autre_projet secret-test 0
 verifier champ_nom secret-test 0
 verifier sans_label_equipe secret-test 0
 verifier creation mauvais-secret 0       # signature refusée
+verifier deepl_en_panne secret-test 1 'Translation unavailable'   # DeepL en panne : issue en français
 
 echo "Résultat : $echecs échec(s)"
 [[ "$echecs" == 0 ]]

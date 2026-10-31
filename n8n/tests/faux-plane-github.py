@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fausse API Plane + GitHub pour tester le workflow. Journalise chaque appel."""
+"""Fausses API Plane, GitHub et DeepL pour tester le workflow. Journalise chaque appel."""
 import json
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -45,6 +45,11 @@ class H(BaseHTTPRequestHandler):
             n = counter["n"]
             return self._send(201, {"number": n, "node_id": f"I_node{n}",
                                     "html_url": f"https://github.com/Flowly-PBS/{repo}/issues/{n}"})
+        if self.path.endswith("/v2/translate"):
+            if any("PANNE" in t for t in data["text"]):
+                return self._send(456, {"message": "Quota exceeded"})
+            return self._send(200, {"translations": [{"detected_source_language": "FR", "text": "EN: " + t}
+                                                     for t in data["text"]]})
         if self.path.endswith("/graphql"):
             return self._send(200, {"data": {"addProjectV2ItemById": {"item": {"id": "PVTI_x"}}}})
         self._send(404, {})

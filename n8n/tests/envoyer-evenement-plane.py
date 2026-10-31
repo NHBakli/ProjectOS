@@ -14,11 +14,12 @@ def lab(*noms):
     return [{"id": f"l-{n}", "name": n, "color": "#000"} for n in noms]
 
 
-def payload(action, labels, projet=PROJET, champ=None, issue="11111111-aaaa-bbbb-cccc-000000000001"):
+def payload(action, labels, projet=PROJET, champ=None, issue="11111111-aaaa-bbbb-cccc-000000000001",
+            nom="Écran de connexion « mobile » \"v2\""):
     return {
         "event": "issue", "action": action, "webhook_id": "w", "workspace_id": "ws",
         "workspace_slug": "flowly",
-        "data": {"id": issue, "name": "Écran de connexion « mobile » \"v2\"", "project": projet,
+        "data": {"id": issue, "name": nom, "project": projet,
                  "description_stripped": "Ligne 1\nÀ faire : l'API", "labels": labels, "sequence_id": 8},
         "activity": {"field": champ, "new_value": None, "old_value": None, "actor": {"id": "u"}},
     }
@@ -31,6 +32,8 @@ CAS = {
     "autre_projet": payload("created", lab("devops"), projet="autre"),
     "champ_nom": payload("updated", lab("devops"), champ="name", issue="22222222-aaaa-bbbb-cccc-000000000002"),
     "sans_label_equipe": payload("created", lab("bug"), issue="33333333-aaaa-bbbb-cccc-000000000003"),
+    "deepl_en_panne": payload("created", lab("DevOps"), issue="44444444-aaaa-bbbb-cccc-000000000004",
+                              nom="PANNE de traduction"),
 }
 
 cas = sys.argv[1]

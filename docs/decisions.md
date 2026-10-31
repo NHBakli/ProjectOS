@@ -17,6 +17,7 @@
 | Plane | Un seul projet, labels d'équipe | Simple pour 5 à 7 personnes |
 | Doublons | Lien GitHub enregistré dans le ticket Plane | Vérifié avant chaque création ; rien à stocker dans n8n |
 | Webhook Plane | Signature HMAC vérifiée dans n8n | L'URL du webhook est publique |
+| Traduction | DeepL API Free, FR → EN-US, original FR replié dans l'issue | Bonne qualité, gratuit au volume de l'équipe. LibreTranslate écarté (RAM, qualité). Si DeepL échoue, l'issue est créée en français. |
 | GitOps (Flux, Argo CD) | Pas maintenant | Seulement quand les sauvegardes et restaurations seront fiables |
 
 ## Plane : Community ou Commercial ?

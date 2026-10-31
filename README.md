@@ -16,7 +16,7 @@ Tout s'installe depuis ton poste avec **Ansible**. Rien ne se modifie à la main
 | HTTPS (Traefik + Let's Encrypt) | ✅ Fonctionne |
 | Plane | ✅ En ligne (v1.4.2), compte admin créé |
 | n8n | ✅ En ligne (v2.44.5), compte propriétaire créé |
-| Sauvegardes | ✅ Plane testée · 🟡 n8n prête, à tester. Copie hors poste et automatisation à faire. |
+| Sauvegardes | ✅ Plane et n8n, restaurations testées. Copie hors poste et automatisation à faire. |
 
 Détails et historique : [docs/00-etat.md](docs/00-etat.md).
 

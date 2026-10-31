@@ -24,13 +24,13 @@ Mis à jour le 2026-10-31.
 - ✅ Bases de Plane (PostgreSQL, Redis, RabbitMQ, MinIO) fermées depuis Internet
 - ✅ Sauvegarde Plane chiffrée vers le poste, restauration testée
 - ✅ n8n v2.44.5 en ligne en HTTPS, compte propriétaire créé
+- ✅ Sauvegarde n8n chiffrée vers le poste, restauration testée (clé vérifiée)
 
 ## Ce qui reste
 
-1. Sauvegarder n8n et **tester sa restauration** → [sauvegardes.md](sauvegardes.md)
-2. Premier workflow GitHub → Plane → [05-n8n.md](05-n8n.md)
-3. Copier les sauvegardes hors du poste, puis les automatiser → [sauvegardes.md](sauvegardes.md)
-4. Passer à un vrai domaine avant d'inviter l'équipe → [03-https.md](03-https.md)
+1. Premier workflow GitHub → Plane → [05-n8n.md](05-n8n.md)
+2. Copier les sauvegardes hors du poste, puis les automatiser → [sauvegardes.md](sauvegardes.md)
+3. Passer à un vrai domaine avant d'inviter l'équipe → [03-https.md](03-https.md)
 
 ## Journal
 
@@ -45,6 +45,7 @@ Mis à jour le 2026-10-31.
 | 2026-10-31 | cert-manager installé, test HTTPS réussi avec sslip.io. |
 | 2026-10-31 | Plane déployé : 11 composants prêts, certificat valide jusqu'au 2027-01-28 (renouvelé automatiquement). Compte admin créé. Le serveur utilise ~3,2 Gio de RAM. |
 | 2026-10-31 | n8n déployé, certificat valide, compte propriétaire créé. Sauvegarde n8n et test de restauration préparés. |
+| 2026-10-31 | Fichier Vault n8n recréé depuis le Secret du cluster (mot de passe différent à la création). Test de restauration n8n réussi. |
 | 2026-10-31 | 1ʳᵉ sauvegarde Plane rapatriée (chiffrée). Test de restauration réussi : données identiques (2 utilisateurs, 1 projet, 7 tickets). Aucun fichier joint à ce moment-là. |
 
 ## Bugs corrigés en route

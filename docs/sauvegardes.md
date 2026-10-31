@@ -16,7 +16,7 @@ Destination : `~/projectos-backups/plane-DATE/`.
 ## 1. Créer la phrase de passe (une seule fois)
 
 ```bash
-./scripts/generate-backup-secret.sh
+./scripts/generate-secrets.sh backup
 ```
 
 Utilise **le même mot de passe Vault** que pour Plane. Le script crée `~/.config/projectos/backup.vault.yml`.

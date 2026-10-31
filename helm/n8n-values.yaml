@@ -1,6 +1,6 @@
 ---
-# Exemple pour une petite instance single-node. Remplacer domaine, StorageClass
-# et noms de Secrets avant déploiement. Ne jamais mettre la clé ici.
+# Valeurs n8n pour la VM single-node. Aucun secret ni nom d'hôte réel :
+# deploy-n8n.yml injecte l'hôte (ingress, URLs) depuis le fichier privé.
 image:
   tag: '2.44.5'
 
@@ -13,6 +13,10 @@ database:
 
 redis:
   enabled: false
+
+# SQLite sur un volume RWO : ne jamais faire tourner deux n8n en même temps.
+strategy:
+  type: Recreate
 
 persistence:
   enabled: true
@@ -34,6 +38,9 @@ taskRunners:
 ingress:
   enabled: true
   className: traefik
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: n8n-redirect-https@kubernetescrd
   hosts:
     - host: n8n.example.invalid
       paths:
@@ -52,7 +59,11 @@ webhook:
   url: https://n8n.example.invalid/
 
 config:
-  timezone: Europe/Stockholm
+  timezone: Europe/Paris
+  extraEnv:
+    # Traefik est le seul proxy devant n8n.
+    - name: N8N_PROXY_HOPS
+      value: '1'
 
 resources:
   main:

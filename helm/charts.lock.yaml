@@ -17,6 +17,7 @@ charts:
     repository: oci://ghcr.io/n8n-io/n8n-helm-chart/n8n
     version: 1.17.0
     app_version: 2.44.5
+    # Archive vendorisée dans helm/charts/ (déployée via chartContent).
     oci_digest: sha256:87632113aefe2228090da8895ee3bd512a0f658f0c31854a6c66bd8aa65bb379
     archive_sha256: 15a83b48bb53ab052e60d6ef553bb787912c234b2439101ef9dc574afcad1717
   cert_manager:

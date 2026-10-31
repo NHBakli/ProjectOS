@@ -8,13 +8,8 @@ helm_bin="${HELM_BIN:-helm}"
 chart_dir="${PROJECTOS_CHART_CACHE:-${TMPDIR:-/tmp}/projectos-chart-cache}"
 mkdir -p "$chart_dir"
 
-if [[ -n "${PROJECTOS_N8N_CHART_ARCHIVE:-}" ]]; then
-  n8n_chart="$PROJECTOS_N8N_CHART_ARCHIVE"
-else
-  "$helm_bin" pull oci://ghcr.io/n8n-io/n8n-helm-chart/n8n \
-    --version 1.17.0 --destination "$chart_dir"
-  n8n_chart="$chart_dir/n8n-1.17.0.tgz"
-fi
+# Archive n8n vendorisée : le contrôleur Helm de K3s ne lit pas les charts OCI.
+n8n_chart="${PROJECTOS_N8N_CHART_ARCHIVE:-helm/charts/n8n-1.17.0.tgz}"
 
 if [[ -n "${PROJECTOS_PLANE_CE_CHART_ARCHIVE:-}" ]]; then
   plane_ce_chart="$PROJECTOS_PLANE_CE_CHART_ARCHIVE"
@@ -40,7 +35,7 @@ printf '%s\n' \
   "e75e9a5dfa0a3f8100614916bb130b8d4bdc7021177f6ef47a25853fdb4bc621  $plane_commercial_chart" \
   | sha256sum --check --status
 
-"$helm_bin" lint "$n8n_chart" -f helm/n8n-values.example.yaml
+"$helm_bin" lint "$n8n_chart" -f helm/n8n-values.yaml
 "$helm_bin" lint "$plane_ce_chart" -f helm/plane-ce-values.yaml
 "$helm_bin" lint "$plane_commercial_chart" -f helm/plane-commercial-values.example.yaml
 
@@ -48,7 +43,7 @@ n8n_render="$chart_dir/n8n-rendered.yaml"
 plane_ce_render="$chart_dir/plane-ce-rendered.yaml"
 plane_commercial_render="$chart_dir/plane-commercial-rendered.yaml"
 "$helm_bin" template n8n "$n8n_chart" -n n8n \
-  -f helm/n8n-values.example.yaml > "$n8n_render"
+  -f helm/n8n-values.yaml > "$n8n_render"
 "$helm_bin" template plane-app "$plane_ce_chart" -n plane \
   -f helm/plane-ce-values.yaml > "$plane_ce_render"
 "$helm_bin" template plane-app "$plane_commercial_chart" -n plane \

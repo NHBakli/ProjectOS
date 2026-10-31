@@ -1,0 +1,157 @@
+---
+- name: Déployer n8n
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  vars:
+    n8n_namespace: n8n
+    n8n_host: "n8n.{{ projectos_base_domain }}"
+    n8n_url: "https://{{ n8n_host }}/"
+    n8n_chart_archive: "{{ playbook_dir }}/../../../helm/charts/n8n-1.17.0.tgz"
+    n8n_chart_sha256: 15a83b48bb53ab052e60d6ef553bb787912c234b2439101ef9dc574afcad1717
+    n8n_base_values: "{{ lookup('ansible.builtin.file', playbook_dir ~ '/../../../helm/n8n-values.yaml') | from_yaml }}"
+    n8n_values: >-
+      {{ n8n_base_values | combine({
+           'ingress': {
+             'hosts': [{'host': n8n_host, 'paths': [{'path': '/', 'pathType': 'Prefix'}]}],
+             'tls': [{'secretName': 'n8n-tls', 'hosts': [n8n_host]}]},
+           'editor': {'url': n8n_url},
+           'webhook': {'url': n8n_url},
+           'config': {'extraEnv': n8n_base_values.config.extraEnv
+                                  + [{'name': 'WEBHOOK_URL', 'value': n8n_url}]}
+         }, recursive=True) }}
+    n8n_secret_manifest: |
+      apiVersion: v1
+      kind: Secret
+      type: Opaque
+      metadata:
+        name: n8n-secrets
+        namespace: {{ n8n_namespace }}
+      stringData:
+        N8N_ENCRYPTION_KEY: {{ n8n_encryption_key | to_json }}
+        N8N_HOST: {{ n8n_host | to_json }}
+        N8N_PORT: '5678'
+        N8N_PROTOCOL: http
+  tasks:
+    - name: Exiger l'autorisation, le domaine et la clé chiffrée
+      ansible.builtin.assert:
+        that:
+          - n8n_deploy_approved | default(false) | bool
+          - projectos_base_domain | default('') | length > 0
+          - n8n_encryption_key | default('') | length >= 32
+        fail_msg: >-
+          Fournir n8n_deploy_approved=true, platform.yml et le fichier Vault
+          créé par « scripts/generate-secrets.sh n8n ».
+
+    - name: Vérifier l'empreinte de l'archive du chart
+      ansible.builtin.stat:
+        path: "{{ n8n_chart_archive }}"
+        checksum_algorithm: sha256
+      register: n8n_chart_stat
+      delegate_to: localhost
+      become: false
+      failed_when: n8n_chart_stat.stat.checksum | default('') != n8n_chart_sha256
+
+    - name: Lire l'archive du chart
+      ansible.builtin.slurp:
+        src: "{{ n8n_chart_archive }}"
+      register: n8n_chart_content
+      delegate_to: localhost
+      become: false
+
+    - name: Créer le namespace et la redirection HTTPS
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, apply, -f, '-']
+        stdin: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: {{ n8n_namespace }}
+            labels:
+              app.kubernetes.io/part-of: project-os
+          ---
+          apiVersion: traefik.io/v1alpha1
+          kind: Middleware
+          metadata:
+            name: redirect-https
+            namespace: {{ n8n_namespace }}
+          spec:
+            redirectScheme:
+              scheme: https
+              permanent: true
+      register: n8n_base_apply
+      changed_when: "'created' in n8n_base_apply.stdout or 'configured' in n8n_base_apply.stdout"
+
+    # kubectl diff renvoie 1 s'il y a une différence ; il masque les valeurs des Secrets.
+    - name: Comparer le Secret n8n attendu à l'existant
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, diff, --server-side, --field-manager=projectos, -f, '-']
+        stdin: "{{ n8n_secret_manifest }}"
+      register: n8n_secret_diff
+      changed_when: false
+      failed_when: n8n_secret_diff.rc > 1
+      no_log: true
+
+    - name: Créer ou mettre à jour le Secret n8n sans l'afficher
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, apply, --server-side, --field-manager=projectos, -f, '-']
+        stdin: "{{ n8n_secret_manifest }}"
+      when: n8n_secret_diff.rc == 1
+      changed_when: true
+      no_log: true
+
+    - name: Appliquer le HelmChart n8n (archive vérifiée intégrée)
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, apply, -f, '-']
+        stdin: |
+          {{ {'apiVersion': 'helm.cattle.io/v1', 'kind': 'HelmChart',
+              'metadata': {'name': 'n8n', 'namespace': 'kube-system',
+                           'labels': {'app.kubernetes.io/part-of': 'project-os'}},
+              'spec': {'chartContent': n8n_chart_content.content,
+                       'targetNamespace': n8n_namespace,
+                       'valuesContent': n8n_values | to_nice_yaml}} | to_nice_yaml }}
+      register: n8n_chart_apply
+      changed_when: "'created' in n8n_chart_apply.stdout or 'configured' in n8n_chart_apply.stdout"
+
+    - name: Attendre la fin de l'installation Helm
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, wait, -n, kube-system,
+               --for=condition=complete, job/helm-install-n8n, --timeout=60s]
+      register: n8n_helm_job
+      until: n8n_helm_job.rc == 0
+      retries: 15
+      delay: 10
+      changed_when: false
+
+    - name: Attendre n8n
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, rollout, status, -n, "{{ n8n_namespace }}",
+               deployment/n8n-main, --timeout=600s]
+      changed_when: false
+
+    - name: Attendre le certificat HTTPS
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, wait, -n, "{{ n8n_namespace }}",
+               --for=condition=Ready, certificate/n8n-tls, --timeout=60s]
+      register: n8n_cert
+      until: n8n_cert.rc == 0
+      retries: 10
+      delay: 15
+      changed_when: false
+
+    - name: Vérifier n8n en HTTPS avec certificat valide
+      ansible.builtin.uri:
+        url: "{{ n8n_url }}healthz"
+        status_code: 200
+      register: n8n_http
+      until: n8n_http.status == 200
+      retries: 12
+      delay: 10
+      delegate_to: localhost
+      become: false
+
+    - name: Résumer le déploiement
+      ansible.builtin.debug:
+        msg: >-
+          n8n répond en HTTPS sur {{ n8n_url }}. Créer immédiatement le compte
+          propriétaire : la première personne qui ouvre la page en prend le contrôle.

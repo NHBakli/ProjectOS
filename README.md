@@ -15,7 +15,7 @@ Tout s'installe depuis ton poste avec **Ansible**. Rien ne se modifie à la main
 | K3s | ✅ Installé et testé |
 | HTTPS (Traefik + Let's Encrypt) | ✅ Fonctionne |
 | Plane | ✅ En ligne (v1.4.2), compte admin créé |
-| n8n | ⏳ À faire |
+| n8n | 🟡 Prêt à déployer |
 | Sauvegardes | ✅ Vers le poste, restauration testée. Copie hors poste et automatisation à faire. |
 
 Détails et historique : [docs/00-etat.md](docs/00-etat.md).

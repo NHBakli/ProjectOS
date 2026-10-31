@@ -16,11 +16,11 @@
 | Phrase de passe des sauvegardes | `~/.config/projectos/backup.vault.yml` | Sauvegardes illisibles |
 | Token et datastore K3s | `/var/lib/rancher/k3s/server/` sur le VPS | Cluster non restaurable |
 | kubeconfig admin | `~/.kube/projectos.yaml` | Se récupère sur le VPS |
-| Clé n8n (à venir) | Fichier Vault | Identifiants n8n illisibles |
+| Clé n8n | `~/.config/projectos/n8n-secrets.vault.yml` | Identifiants n8n illisibles |
 
 ## Secrets Plane
 
-Générés par `scripts/generate-plane-secrets.sh`, créés par `deploy-plane.yml` dans le namespace `plane` :
+Générés par `scripts/generate-secrets.sh plane`, créés par `deploy-plane.yml` dans le namespace `plane` :
 
 | Secret Kubernetes | Contenu |
 |---|---|
@@ -30,6 +30,14 @@ Générés par `scripts/generate-plane-secrets.sh`, créés par `deploy-plane.ym
 | `plane-postgres` | Compte PostgreSQL |
 | `plane-rabbitmq` | Compte RabbitMQ |
 | `plane-doc-store` | Compte MinIO (stockage des fichiers) |
+
+## Générer des secrets
+
+```bash
+./scripts/generate-secrets.sh plane    # ou backup, ou n8n
+```
+
+Le script refuse d'écraser un fichier existant. Utilise toujours le même mot de passe Vault.
 
 ## Lire un fichier Vault
 

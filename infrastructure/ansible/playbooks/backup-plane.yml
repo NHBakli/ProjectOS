@@ -14,7 +14,7 @@
       ansible.builtin.assert:
         that:
           - projectos_backup_passphrase | default('') | length >= 32
-        fail_msg: Fournir le fichier backup.vault.yml (scripts/generate-backup-secret.sh).
+        fail_msg: Fournir le fichier backup.vault.yml (« scripts/generate-secrets.sh backup »).
 
     - name: Fixer l'horodatage et le dossier de destination
       ansible.builtin.set_fact:

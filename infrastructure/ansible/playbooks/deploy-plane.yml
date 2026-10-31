@@ -53,7 +53,7 @@
           - plane_minio_password | default('') | length >= 32
         fail_msg: >-
           Fournir plane_deploy_approved=true, platform.yml et le fichier Vault
-          généré par scripts/generate-plane-secrets.sh.
+          généré par « scripts/generate-secrets.sh plane ».
 
     - name: Créer le namespace Plane
       ansible.builtin.command:

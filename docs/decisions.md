@@ -9,6 +9,7 @@
 | Certificats | cert-manager + Let's Encrypt | Gratuit, renouvellement automatique |
 | Domaine | sslip.io (provisoire) | Gratuit, immédiat. À remplacer avant l'arrivée de l'équipe. |
 | Déploiement des charts | `HelmChart` intégré à K3s | Pas besoin de Helm sur le poste ni de tunnel |
+| Chart n8n | Archive gardée dans `helm/charts/`, empreinte vérifiée | K3s ne lit pas les charts OCI ; protège aussi contre une modification du registre |
 | Stockage | `local-path` (disque du VPS) | Simple. Les données ne survivent pas à la perte du VPS : d'où les sauvegardes. |
 | Secrets | Ansible Vault | Déjà dans Ansible, chiffré, rien en clair |
 | n8n | Mode simple (SQLite) | Suffit pour 5 à 7 personnes |

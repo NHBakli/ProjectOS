@@ -18,7 +18,7 @@ Les bases de données ne sont **pas** accessibles depuis Internet.
 **1. Générer les secrets** (une seule fois)
 
 ```bash
-./scripts/generate-plane-secrets.sh
+./scripts/generate-secrets.sh plane
 ```
 
 - Choisis un **mot de passe Vault** et garde-le précieusement.

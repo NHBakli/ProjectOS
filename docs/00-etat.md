@@ -42,6 +42,7 @@ Mis à jour le 2026-10-31.
 | 2026-10-31 | Fuite trouvée : les NodePorts contournaient UFW. Corrigée (limités à `127.0.0.1`). |
 | 2026-10-31 | cert-manager installé, test HTTPS réussi avec sslip.io. |
 | 2026-10-31 | Plane déployé : 11 composants prêts, certificat valide jusqu'au 2027-01-28 (renouvelé automatiquement). Compte admin créé. Le serveur utilise ~3,2 Gio de RAM. |
+| 2026-10-31 | Déploiement n8n préparé, pas encore lancé. |
 | 2026-10-31 | 1ʳᵉ sauvegarde Plane rapatriée (chiffrée). Test de restauration réussi : données identiques (2 utilisateurs, 1 projet, 7 tickets). Aucun fichier joint à ce moment-là. |
 
 ## Bugs corrigés en route

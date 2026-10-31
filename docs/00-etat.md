@@ -25,7 +25,7 @@ Mis à jour le 2026-10-31.
 
 ## Ce qui reste
 
-1. Mettre en place et **tester** les sauvegardes → [sauvegardes.md](sauvegardes.md)
+1. Lancer la 1ʳᵉ sauvegarde et **tester sa restauration** → [sauvegardes.md](sauvegardes.md)
 2. Déployer n8n → [05-n8n.md](05-n8n.md)
 3. Passer à un vrai domaine avant d'inviter l'équipe → [03-https.md](03-https.md)
 
@@ -41,6 +41,7 @@ Mis à jour le 2026-10-31.
 | 2026-10-31 | Fuite trouvée : les NodePorts contournaient UFW. Corrigée (limités à `127.0.0.1`). |
 | 2026-10-31 | cert-manager installé, test HTTPS réussi avec sslip.io. |
 | 2026-10-31 | Plane déployé : 11 composants prêts, certificat valide jusqu'au 2027-01-28 (renouvelé automatiquement). Compte admin créé. Le serveur utilise ~3,2 Gio de RAM. |
+| 2026-10-31 | Sauvegarde Plane vers le poste (chiffrée) et test de restauration préparés. |
 
 ## Bugs corrigés en route
 

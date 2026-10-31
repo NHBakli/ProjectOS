@@ -13,6 +13,7 @@
 |---|---|---|
 | Mot de passe Vault | Ta tête / ton gestionnaire de mots de passe | Fichiers Vault illisibles |
 | Secrets Plane | `~/.config/projectos/plane-secrets.vault.yml` | Plane non restaurable |
+| Phrase de passe des sauvegardes | `~/.config/projectos/backup.vault.yml` | Sauvegardes illisibles |
 | Token et datastore K3s | `/var/lib/rancher/k3s/server/` sur le VPS | Cluster non restaurable |
 | kubeconfig admin | `~/.kube/projectos.yaml` | Se récupère sur le VPS |
 | Clé n8n (à venir) | Fichier Vault | Identifiants n8n illisibles |

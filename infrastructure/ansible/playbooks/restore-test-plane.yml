@@ -1,0 +1,241 @@
+---
+- name: Tester une sauvegarde Plane en la restaurant dans un namespace jetable
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  vars:
+    restore_ns: plane-restore-test
+    restore_postgres_image: postgres:15.7-alpine
+    restore_minio_image: docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z
+    restore_busybox_image: busybox:1.36.1
+    restore_kubectl: [/usr/local/bin/k3s, kubectl, -n, plane-restore-test]
+    restore_tables: [users, workspaces, projects, issues, file_assets]
+    restore_count_sql: >-
+      select count(*) from users; select count(*) from workspaces;
+      select count(*) from projects; select count(*) from issues;
+      select count(*) from file_assets;
+  tasks:
+    - name: Exiger l'autorisation, la sauvegarde et les secrets
+      ansible.builtin.assert:
+        that:
+          - restore_test_approved | default(false) | bool
+          - backup_dir | default('') | length > 0
+          - projectos_backup_passphrase | default('') | length >= 32
+          - plane_minio_password | default('') | length >= 32
+        fail_msg: >-
+          Fournir restore_test_approved=true, backup_dir=<dossier de sauvegarde>,
+          backup.vault.yml et plane-secrets.vault.yml.
+
+    - name: Lire le manifeste de la sauvegarde
+      ansible.builtin.set_fact:
+        restore_manifest: "{{ lookup('ansible.builtin.file', backup_dir ~ '/manifest.json') | from_json }}"
+
+    - name: Lire le namespace de test s'il existe
+      ansible.builtin.command:
+        argv: "{{ restore_kubectl[:2] + ['get', 'namespace', restore_ns, '-o',
+               'jsonpath={.metadata.labels.projectos\\.dev/restore-test}'] }}"
+      register: restore_ns_before
+      changed_when: false
+      failed_when: false
+
+    - name: Refuser un namespace existant qui n'appartient pas au test
+      ansible.builtin.assert:
+        that:
+          - restore_ns_before.rc != 0 or restore_ns_before.stdout == 'true'
+        fail_msg: Le namespace {{ restore_ns }} existe sans le label du test ; arrêt.
+
+    - name: Restaurer dans le namespace de test puis comparer
+      block:
+        - name: Créer un dossier temporaire protégé sur le VPS
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: projectos-restore-
+          register: restore_tmp
+
+        - name: Envoyer la sauvegarde chiffrée sur le VPS
+          ansible.builtin.copy:
+            src: "{{ backup_dir }}/{{ item }}.gpg"
+            dest: "{{ restore_tmp.path }}/{{ item }}.gpg"
+            mode: '0600'
+          loop: [plane-postgres.dump, plane-minio.tar.gz]
+
+        - name: Déchiffrer la sauvegarde
+          ansible.builtin.command:
+            argv: [gpg, --homedir, "{{ restore_tmp.path }}", --batch, --yes, --pinentry-mode, loopback,
+                   --passphrase-fd, '0', --decrypt,
+                   --output, "{{ restore_tmp.path }}/{{ item }}", "{{ restore_tmp.path }}/{{ item }}.gpg"]
+            stdin: "{{ projectos_backup_passphrase }}"
+          loop: [plane-postgres.dump, plane-minio.tar.gz]
+          changed_when: true
+          no_log: true
+
+        - name: Créer le namespace et les identifiants MinIO du test
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl[:2] + ['apply', '-f', '-'] }}"
+            stdin: |
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: {{ restore_ns }}
+                labels:
+                  projectos.dev/restore-test: 'true'
+              ---
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: restore-minio
+                namespace: {{ restore_ns }}
+              stringData:
+                MINIO_ROOT_USER: plane-storage
+                MINIO_ROOT_PASSWORD: {{ plane_minio_password | to_json }}
+          changed_when: true
+          no_log: true
+
+        # PostgreSQL jetable sans Service : authentification locale sans mot de passe.
+        - name: Démarrer PostgreSQL et le chargeur de fichiers de test
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['apply', '-f', '-'] }}"
+            stdin: |
+              apiVersion: v1
+              kind: PersistentVolumeClaim
+              metadata:
+                name: restore-minio-data
+              spec:
+                accessModes: [ReadWriteOnce]
+                resources:
+                  requests:
+                    storage: 2Gi
+              ---
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                name: restore-pg
+              spec:
+                containers:
+                  - name: postgres
+                    image: {{ restore_postgres_image }}
+                    env:
+                      - {name: POSTGRES_USER, value: plane}
+                      - {name: POSTGRES_DB, value: plane}
+                      - {name: POSTGRES_HOST_AUTH_METHOD, value: trust}
+                    readinessProbe:
+                      exec:
+                        command: [pg_isready, -U, plane]
+              ---
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                name: restore-loader
+              spec:
+                containers:
+                  - name: loader
+                    image: {{ restore_busybox_image }}
+                    command: [sleep, '3600']
+                    volumeMounts:
+                      - {name: data, mountPath: /data}
+                volumes:
+                  - name: data
+                    persistentVolumeClaim:
+                      claimName: restore-minio-data
+          changed_when: true
+
+        - name: Attendre les Pods de test
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['wait', '--for=condition=Ready', 'pod/restore-pg',
+                   'pod/restore-loader', '--timeout=180s'] }}"
+          changed_when: false
+
+        - name: Restaurer la base PostgreSQL
+          ansible.builtin.shell:
+            cmd: >-
+              /usr/local/bin/k3s kubectl -n {{ restore_ns }} exec -i restore-pg --
+              pg_restore -U plane -d plane --no-owner --no-privileges
+              < {{ restore_tmp.path }}/plane-postgres.dump
+          register: restore_pg
+          changed_when: true
+          # pg_restore renvoie 1 pour des avertissements ; les comptages tranchent.
+          failed_when: restore_pg.rc > 1
+
+        - name: Restaurer les données MinIO dans le volume de test
+          ansible.builtin.shell:
+            cmd: >-
+              /usr/local/bin/k3s kubectl -n {{ restore_ns }} exec -i restore-loader --
+              tar -xzf - -C /data < {{ restore_tmp.path }}/plane-minio.tar.gz
+          changed_when: true
+
+        - name: Libérer le volume pour MinIO
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['delete', 'pod', 'restore-loader', '--wait=true'] }}"
+          changed_when: true
+
+        - name: Démarrer MinIO sur les données restaurées
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['apply', '-f', '-'] }}"
+            stdin: |
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                name: restore-minio
+              spec:
+                containers:
+                  - name: minio
+                    image: {{ restore_minio_image }}
+                    args: [server, /data]
+                    envFrom:
+                      - secretRef:
+                          name: restore-minio
+                    readinessProbe:
+                      httpGet:
+                        path: /minio/health/ready
+                        port: 9000
+                    volumeMounts:
+                      - {name: data, mountPath: /data}
+                volumes:
+                  - name: data
+                    persistentVolumeClaim:
+                      claimName: restore-minio-data
+          changed_when: true
+
+        - name: Attendre MinIO
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['wait', '--for=condition=Ready', 'pod/restore-minio',
+                   '--timeout=180s'] }}"
+          changed_when: false
+
+        - name: Compter les données restaurées dans PostgreSQL
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['exec', 'restore-pg', '--', 'psql', '-U', 'plane', '-d', 'plane', '-Atc',
+                   restore_count_sql] }}"
+          register: restore_pg_counts
+          changed_when: false
+
+        - name: Compter les fichiers restaurés dans MinIO
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['exec', 'restore-minio', '--', 'sh', '-c',
+                   'mc alias set r http://127.0.0.1:9000 \"$MINIO_ROOT_USER\" \"$MINIO_ROOT_PASSWORD\" >/dev/null
+                    && mc ls --recursive r/uploads | wc -l'] }}"
+          register: restore_minio_count
+          changed_when: false
+
+        - name: Comparer avec le manifeste de la sauvegarde
+          ansible.builtin.assert:
+            that:
+              - dict(restore_tables | zip(restore_pg_counts.stdout_lines | map('int'))) == restore_manifest.counts
+              - restore_minio_count.stdout | trim | int == restore_manifest.minio_objects
+            fail_msg: Les données restaurées ne correspondent pas au manifeste.
+            success_msg: >-
+              Restauration identique au manifeste : {{ restore_manifest.counts }},
+              {{ restore_manifest.minio_objects }} fichier(s).
+
+      always:
+        - name: Supprimer le namespace de test
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl[:2] + ['delete', 'namespace', restore_ns, '--ignore-not-found',
+                   '--wait=true', '--timeout=180s'] }}"
+          changed_when: true
+
+        - name: Supprimer les fichiers temporaires du VPS
+          ansible.builtin.file:
+            path: "{{ restore_tmp.path }}"
+            state: absent
+          when: restore_tmp.path is defined

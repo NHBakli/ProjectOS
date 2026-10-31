@@ -1,0 +1,126 @@
+---
+- name: Sauvegarder Plane sur le poste local (PostgreSQL et fichiers, chiffrés)
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  vars:
+    plane_namespace: plane
+    backup_local_root: "{{ lookup('ansible.builtin.env', 'HOME') }}/projectos-backups"
+    backup_files:
+      - plane-postgres.dump
+      - plane-minio.tar.gz
+  tasks:
+    - name: Exiger la phrase de passe des sauvegardes
+      ansible.builtin.assert:
+        that:
+          - projectos_backup_passphrase | default('') | length >= 32
+        fail_msg: Fournir le fichier backup.vault.yml (scripts/generate-backup-secret.sh).
+
+    - name: Fixer l'horodatage et le dossier de destination
+      ansible.builtin.set_fact:
+        backup_local_dir: "{{ backup_local_root }}/plane-{{ now(utc=true, fmt='%Y%m%dT%H%M%SZ') }}"
+
+    - name: Compter les données de référence dans PostgreSQL
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, -n, "{{ plane_namespace }}", exec, plane-app-pgdb-wl-0, --,
+               psql, -U, plane, -d, plane, -Atc,
+               "select count(*) from users; select count(*) from workspaces;
+                select count(*) from projects; select count(*) from issues;
+                select count(*) from file_assets;"]
+      register: backup_pg_counts
+      changed_when: false
+
+    # Les identifiants MinIO restent dans le Pod : ils ne transitent pas par Ansible.
+    - name: Compter les fichiers stockés dans MinIO
+      ansible.builtin.command:
+        argv: [/usr/local/bin/k3s, kubectl, -n, "{{ plane_namespace }}", exec, plane-app-minio-wl-0, --,
+               sh, -c,
+               'mc alias set backup http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
+                && mc ls --recursive backup/uploads | wc -l']
+      register: backup_minio_count
+      changed_when: false
+
+    - name: Trouver le volume MinIO sur l'hôte
+      ansible.builtin.find:
+        paths: /var/lib/rancher/k3s/storage
+        patterns: "*_{{ plane_namespace }}_pvc-plane-app-minio-vol-*"
+        file_type: directory
+      register: backup_minio_volume
+
+    - name: Exiger un volume MinIO unique
+      ansible.builtin.assert:
+        that:
+          - backup_minio_volume.files | length == 1
+        fail_msg: Volume MinIO introuvable ou ambigu ; arrêt.
+
+    - name: Produire, chiffrer et rapatrier la sauvegarde
+      block:
+        - name: Créer un dossier temporaire protégé sur le VPS
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: projectos-backup-
+          register: backup_tmp
+
+        # Redirection binaire : seul shell le permet sans outil dans le conteneur.
+        - name: Exporter la base PostgreSQL (pg_dump, format custom)
+          ansible.builtin.shell:
+            cmd: >-
+              /usr/local/bin/k3s kubectl -n {{ plane_namespace }} exec plane-app-pgdb-wl-0 --
+              pg_dump -U plane -d plane -Fc > {{ backup_tmp.path }}/plane-postgres.dump
+          changed_when: true
+
+        - name: Archiver les données MinIO depuis leur volume
+          ansible.builtin.command:
+            argv: [tar, -C, "{{ backup_minio_volume.files[0].path }}", -czf,
+                   "{{ backup_tmp.path }}/plane-minio.tar.gz", .]
+          changed_when: true
+
+        - name: Écrire le manifeste de la sauvegarde
+          ansible.builtin.copy:
+            dest: "{{ backup_tmp.path }}/manifest.json"
+            mode: '0600'
+            content: >-
+              {{ {'created_utc': backup_local_dir | basename | regex_replace('^plane-', ''),
+                  'plane_chart': '1.8.5',
+                  'counts': dict(['users', 'workspaces', 'projects', 'issues', 'file_assets']
+                                 | zip(backup_pg_counts.stdout_lines | map('int'))),
+                  'minio_objects': backup_minio_count.stdout | trim | int} | to_nice_json }}
+
+        - name: Chiffrer les fichiers (gpg, AES-256)
+          ansible.builtin.command:
+            argv: [gpg, --homedir, "{{ backup_tmp.path }}", --batch, --yes, --pinentry-mode, loopback,
+                   --passphrase-fd, '0', --symmetric, --cipher-algo, AES256,
+                   --output, "{{ backup_tmp.path }}/{{ item }}.gpg", "{{ backup_tmp.path }}/{{ item }}"]
+            stdin: "{{ projectos_backup_passphrase }}"
+          loop: "{{ backup_files }}"
+          changed_when: true
+          no_log: true
+
+        - name: Rapatrier la sauvegarde chiffrée sur le poste
+          ansible.builtin.fetch:
+            src: "{{ backup_tmp.path }}/{{ item }}"
+            dest: "{{ backup_local_dir }}/"
+            flat: true
+          loop: "{{ backup_files | map('regex_replace', '$', '.gpg') | list + ['manifest.json'] }}"
+
+      always:
+        - name: Supprimer les fichiers temporaires du VPS
+          ansible.builtin.file:
+            path: "{{ backup_tmp.path }}"
+            state: absent
+          when: backup_tmp.path is defined
+
+    - name: Restreindre l'accès au dossier local
+      ansible.builtin.file:
+        path: "{{ backup_local_dir }}"
+        mode: '0700'
+      delegate_to: localhost
+      become: false
+
+    - name: Résumer la sauvegarde
+      ansible.builtin.debug:
+        msg:
+          dossier: "{{ backup_local_dir }}"
+          contenu: "{{ dict(['users', 'workspaces', 'projects', 'issues', 'file_assets']
+                       | zip(backup_pg_counts.stdout_lines)) }}"
+          fichiers_minio: "{{ backup_minio_count.stdout | trim }}"

@@ -49,6 +49,20 @@ ansible-vault rekey ~/.config/projectos/NOM-DU-FICHIER.vault.yml
 
 Saisis d'abord l'ancien mot de passe, puis le mot de passe commun.
 
+Ancien mot de passe oublié ? Tant que l'application tourne, ses secrets sont encore dans le cluster. Exemple pour n8n : on recrée le fichier depuis le Secret, sans afficher la clé.
+
+```bash
+mv ~/.config/projectos/n8n-secrets.vault.yml ~/.config/projectos/n8n-secrets.vault.yml.ancien
+( umask 077
+  ssh $VPS_USER@$VPS_IP \
+    "sudo k3s kubectl -n n8n get secret n8n-secrets -o jsonpath='{.data.N8N_ENCRYPTION_KEY}'" \
+  | base64 -d \
+  | python3 -c "import sys; print('---'); print(\"n8n_encryption_key: '\" + sys.stdin.read().strip() + \"'\")" \
+  | ansible-vault encrypt --output ~/.config/projectos/n8n-secrets.vault.yml - )
+```
+
+Contrôle : relancer `deploy-n8n.yml`. La mise à jour du Secret doit être **skipped** (clé identique).
+
 ## Lire un fichier Vault
 
 ```bash

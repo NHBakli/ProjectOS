@@ -8,12 +8,12 @@
     n8n_kubectl: [/usr/local/bin/k3s, kubectl, -n, n8n]
     n8n_pod_selector: app.kubernetes.io/name=n8n,app.kubernetes.io/component=main
     backup_local_root: "{{ lookup('ansible.builtin.env', 'HOME') }}/projectos-backups"
-    # Compte les identifiants sans les déchiffrer ni les afficher.
+    # Lecture seule de la base : le CLI n8n mêle ses journaux à sa sortie standard.
     n8n_count_script: >-
-      n8n list:workflow 2>/dev/null | grep -c . ;
-      n8n export:credentials --all --output=/tmp/projectos-count.json >/dev/null 2>&1
-      && node -e 'console.log(require("/tmp/projectos-count.json").length)' || echo 0 ;
-      rm -f /tmp/projectos-count.json
+      node -e 'const {DatabaseSync} = require("node:sqlite");
+      const db = new DatabaseSync("/home/node/.n8n/database.sqlite", {readOnly: true});
+      for (const t of ["workflow_entity", "credentials_entity"])
+      console.log(db.prepare("select count(*) as c from " + t).get().c)' 2>/dev/null
   tasks:
     - name: Exiger la phrase de passe des sauvegardes
       ansible.builtin.assert:

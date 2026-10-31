@@ -13,6 +13,10 @@
 | Stockage | `local-path` (disque du VPS) | Simple. Les données ne survivent pas à la perte du VPS : d'où les sauvegardes. |
 | Secrets | Ansible Vault | Déjà dans Ansible, chiffré, rien en clair |
 | n8n | Mode simple (SQLite) | Suffit pour 5 à 7 personnes |
+| Synchronisation | Plane → GitHub, création seulement | Plane est la source de vérité. Le label d'équipe choisit le dépôt et le projet GitHub. Un seul sens : pas de boucle. |
+| Plane | Un seul projet, labels d'équipe | Simple pour 5 à 7 personnes |
+| Doublons | Lien GitHub enregistré dans le ticket Plane | Vérifié avant chaque création ; rien à stocker dans n8n |
+| Webhook Plane | Signature HMAC vérifiée dans n8n | L'URL du webhook est publique |
 | GitOps (Flux, Argo CD) | Pas maintenant | Seulement quand les sauvegardes et restaurations seront fiables |
 
 ## Plane : Community ou Commercial ?

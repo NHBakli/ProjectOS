@@ -20,24 +20,23 @@ Utilisateur : francophone, travaille vite, garde la main sur les choix et lance 
 | Plane CE `v1.4.2` (chart `plane-ce` 1.8.5) | ✅ En ligne, compte admin créé |
 | n8n `2.44.5` (chart 1.17.0, SQLite) | ✅ En ligne, compte propriétaire créé |
 | Sauvegardes | ✅ Plane et n8n chiffrées (gpg) vers le poste, restaurations testées. Lancement manuel. |
+| Workflow Plane → GitHub | 🟡 Écrit et testé en local (`scripts/test-n8n-workflow.sh`), pas encore installé |
 
 Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
 
 ## La suite (dans l'ordre)
 
-1. **Premier workflow n8n GitHub → Plane.** Proposition faite à l'utilisateur, **réponses attendues** :
-   - Sens : une issue GitHub crée un ticket Plane (lien vers l'issue, **idempotent**, sans doublon).
-   - Quel dépôt GitHub, quel projet Plane ?
-   - Accès créés par l'utilisateur et saisis **directement dans n8n** : clé API Plane, token GitHub limité au dépôt ou secret de webhook.
-   - Avant de concevoir : vérifier l'API réelle de Plane v1.4.2 et les webhooks GitHub. Livrer un workflow à importer + un guide pas à pas.
-   - Ensuite : tri des tickets par label `frontend` / `backend`.
+1. **Installer le workflow Plane → GitHub** (`docs/06-plane-github.md`). Choix de l'utilisateur : sens **Plane → GitHub**, création seulement ; **un seul projet Plane** avec labels d'équipe ; organisation GitHub **Flowly-PBS**.
+   - Routage : `frontend` → dépôt `Frontend` + projet 2, `backend` → `Backend` + projet 1, `mobile` → `Mobile` + projet 3, `devops` → `DevOps` (dépôt à créer par l'utilisateur) + projet 5.
+   - Anti-doublon : lien GitHub enregistré dans le ticket Plane, vérifié avant création. Signature HMAC du webhook Plane vérifiée.
+   - Vérifié dans le code de Plane v1.4.2 (`webhook_task.py`, API `work-items/…/links/`, en-tête `X-Api-Key`). Testé dans n8n 2.44.5 local avec de fausses API. **Pas encore testé en vrai** : Plane → n8n via l'URL publique, token GitHub, ajout aux projets.
 2. **Sauvegardes** : copie hors du poste (disque externe ou cloud), puis automatisation. Le datastore K3s n'est pas encore sauvegardé.
 3. **Vrai domaine** (ou DuckDNS) avant d'inviter l'équipe. Il faudra changer les URL de Plane, n8n et des webhooks.
 4. Plus tard : observabilité légère, CI de déploiement, GitOps seulement quand les restaurations sont fiables. n8n signale que le mode « task runner interne » sera retiré : passer en runners externes lors d'une mise à jour.
 
 ## Comment on travaille
 
-1. Écrire et valider **en local** : `./scripts/validate.sh` (yamllint, ansible-lint, syntax-check). Pour Helm : `./scripts/validate-helm.sh` (Helm 3.22.1).
+1. Écrire et valider **en local** : `./scripts/validate.sh` (yamllint, ansible-lint, syntax-check). Pour Helm : `./scripts/validate-helm.sh` (Helm 3.22.1). Pour les workflows n8n : `./scripts/test-n8n-workflow.sh`.
 2. Tester les rendus Jinja/Helm en local avec de fausses valeurs avant de livrer.
 3. Committer : message en français, un commit par incrément cohérent.
 4. Donner à l'utilisateur **les commandes exactes** à lancer et le **résultat attendu**. Il colle la sortie, on analyse.
@@ -54,6 +53,8 @@ Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
 | `helm/*-values.yaml`, `helm/charts.lock.yaml`, `helm/charts/` | Valeurs, versions épinglées, archive n8n vendorisée |
 | `kubernetes/` | Manifests cert-manager et smoke tests |
 | `scripts/generate-secrets.sh plane\|backup\|n8n` | Crée les secrets directement chiffrés (Vault), un seul mot de passe |
+| `n8n/workflows/` | Workflows n8n à importer (sans secret ni domaine) |
+| `scripts/test-n8n-workflow.sh` | Teste un workflow dans un n8n local (Docker) face à de fausses API Plane/GitHub |
 | `~/.config/projectos/` (hors Git) | `hosts.yml`, `k3s-approval.yml`, `platform.yml`, `*.vault.yml` |
 | `~/projectos-backups/` (hors Git) | Sauvegardes chiffrées |
 
@@ -68,6 +69,7 @@ Les déploiements passent par le **CRD `HelmChart` de K3s** (pas de Helm sur le 
 - `kubectl apply --server-side` répond toujours `serverside-applied` : utiliser `kubectl diff` pour l'idempotence.
 - Le CLI n8n écrit ses journaux sur stdout : compter dans la base (`node:sqlite`, lecture seule), pas dans sa sortie.
 - Plusieurs fichiers Vault chargés ensemble doivent avoir le **même** mot de passe. Récupération possible depuis les Secrets du cluster (`docs/secrets.md`).
+- Webhook Plane : la signature `X-Plane-Signature` est un HMAC-SHA256 du corps brut. Le vérifier sur le corps brut (option *Raw Body* du nœud Webhook), jamais sur un JSON resérialisé.
 - La page `/god-mode/` de Plane et la première page de n8n donnent les droits admin au premier visiteur : créer les comptes tout de suite.
 
 ## Règles de développement

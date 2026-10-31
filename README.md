@@ -17,6 +17,7 @@ Tout s'installe depuis ton poste avec **Ansible**. Rien ne se modifie à la main
 | Plane | ✅ En ligne (v1.4.2), compte admin créé |
 | n8n | ✅ En ligne (v2.44.5), compte propriétaire créé |
 | Sauvegardes | ✅ Plane et n8n, restaurations testées. Copie hors poste et automatisation à faire. |
+| Workflow Plane → GitHub | 🟡 Prêt et testé en local, à installer |
 
 Détails et historique : [docs/00-etat.md](docs/00-etat.md).
 
@@ -29,6 +30,7 @@ Suis les guides dans l'ordre :
 3. [Activer HTTPS](docs/03-https.md)
 4. [Déployer Plane](docs/04-plane.md)
 5. [Déployer n8n](docs/05-n8n.md)
+6. [Workflow Plane → GitHub](docs/06-plane-github.md)
 
 À connaître aussi :
 
@@ -45,8 +47,8 @@ flowchart LR
     T --> P[Plane]
     T --> N[n8n]
     P --> D[(PostgreSQL, Redis,<br/>RabbitMQ, MinIO)]
-    N <--> G[GitHub]
-    N <--> P
+    P -->|webhook| N
+    N -->|issues| G[GitHub]
     subgraph VPS["VPS : VM KVM, Ubuntu 24.04, K3s"]
       T
       P
@@ -71,7 +73,8 @@ Seuls les ports **22** (SSH), **80** et **443** sont ouverts sur Internet.
 infrastructure/ansible/   Rôle K3s, playbooks, inventaires d'exemple
 kubernetes/               Manifests (cert-manager, tests)
 helm/                     Valeurs Helm et versions épinglées
-scripts/                  Validation, génération des secrets
+n8n/                      Workflows n8n à importer et leurs tests
+scripts/                  Validation, tests, génération des secrets
 docs/                     Guides
 ```
 

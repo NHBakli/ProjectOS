@@ -1,0 +1,206 @@
+---
+- name: Tester une sauvegarde n8n en la restaurant dans un namespace jetable
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  vars:
+    restore_ns: n8n-restore-test
+    restore_kubectl: [/usr/local/bin/k3s, kubectl, -n, n8n-restore-test]
+    restore_n8n_image: docker.n8n.io/n8nio/n8n:2.44.5
+    restore_busybox_image: busybox:1.36.1
+    # Déchiffre les identifiants dans le Pod de test pour prouver que la clé
+    # fonctionne, puis efface le fichier : seuls les comptages sortent.
+    restore_count_script: >-
+      n8n list:workflow 2>/dev/null | grep -c . ;
+      n8n export:credentials --all --decrypted --output=/tmp/projectos-check.json >/dev/null 2>&1
+      && node -e 'console.log(require("/tmp/projectos-check.json").length)' || echo 0 ;
+      rm -f /tmp/projectos-check.json
+  tasks:
+    - name: Exiger l'autorisation, la sauvegarde et les secrets
+      ansible.builtin.assert:
+        that:
+          - restore_test_approved | default(false) | bool
+          - backup_dir | default('') | length > 0
+          - projectos_backup_passphrase | default('') | length >= 32
+          - n8n_encryption_key | default('') | length >= 32
+        fail_msg: >-
+          Fournir restore_test_approved=true, backup_dir=<dossier n8n-...>,
+          backup.vault.yml et n8n-secrets.vault.yml.
+
+    - name: Lire le manifeste de la sauvegarde
+      ansible.builtin.set_fact:
+        restore_manifest: "{{ lookup('ansible.builtin.file', backup_dir ~ '/manifest.json') | from_json }}"
+
+    - name: Lire le namespace de test s'il existe
+      ansible.builtin.command:
+        argv: "{{ restore_kubectl[:2] + ['get', 'namespace', restore_ns, '-o',
+               'jsonpath={.metadata.labels.projectos\\.dev/restore-test}'] }}"
+      register: restore_ns_before
+      changed_when: false
+      failed_when: false
+
+    - name: Refuser un namespace existant qui n'appartient pas au test
+      ansible.builtin.assert:
+        that:
+          - restore_ns_before.rc != 0 or restore_ns_before.stdout == 'true'
+        fail_msg: Le namespace {{ restore_ns }} existe sans le label du test ; arrêt.
+
+    - name: Restaurer dans le namespace de test puis comparer
+      block:
+        - name: Créer un dossier temporaire protégé sur le VPS
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: projectos-restore-
+          register: restore_tmp
+
+        - name: Envoyer la sauvegarde chiffrée sur le VPS
+          ansible.builtin.copy:
+            src: "{{ backup_dir }}/n8n-data.tar.gz.gpg"
+            dest: "{{ restore_tmp.path }}/n8n-data.tar.gz.gpg"
+            mode: '0600'
+
+        - name: Déchiffrer la sauvegarde
+          ansible.builtin.command:
+            argv: [gpg, --homedir, "{{ restore_tmp.path }}", --batch, --yes, --pinentry-mode, loopback,
+                   --passphrase-fd, '0', --decrypt,
+                   --output, "{{ restore_tmp.path }}/n8n-data.tar.gz", "{{ restore_tmp.path }}/n8n-data.tar.gz.gpg"]
+            stdin: "{{ projectos_backup_passphrase }}"
+          changed_when: true
+          no_log: true
+
+        - name: Créer le namespace et la clé n8n du test
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl[:2] + ['apply', '-f', '-'] }}"
+            stdin: |
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: {{ restore_ns }}
+                labels:
+                  projectos.dev/restore-test: 'true'
+              ---
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: restore-n8n
+                namespace: {{ restore_ns }}
+              stringData:
+                N8N_ENCRYPTION_KEY: {{ n8n_encryption_key | to_json }}
+          changed_when: true
+          no_log: true
+
+        - name: Démarrer le chargeur de fichiers de test
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['apply', '-f', '-'] }}"
+            stdin: |
+              apiVersion: v1
+              kind: PersistentVolumeClaim
+              metadata:
+                name: restore-n8n-data
+              spec:
+                accessModes: [ReadWriteOnce]
+                resources:
+                  requests:
+                    storage: 1Gi
+              ---
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                name: restore-loader
+              spec:
+                containers:
+                  - name: loader
+                    image: {{ restore_busybox_image }}
+                    command: [sleep, '3600']
+                    volumeMounts:
+                      - {name: data, mountPath: /data}
+                volumes:
+                  - name: data
+                    persistentVolumeClaim:
+                      claimName: restore-n8n-data
+          changed_when: true
+
+        - name: Attendre le chargeur
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['wait', '--for=condition=Ready', 'pod/restore-loader', '--timeout=180s'] }}"
+          changed_when: false
+
+        - name: Restaurer le volume n8n dans le volume de test
+          ansible.builtin.shell:
+            cmd: >-
+              /usr/local/bin/k3s kubectl -n {{ restore_ns }} exec -i restore-loader --
+              tar -xzf - -C /data < {{ restore_tmp.path }}/n8n-data.tar.gz
+          changed_when: true
+
+        - name: Libérer le volume
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['delete', 'pod', 'restore-loader', '--wait=true'] }}"
+          changed_when: true
+
+        # Le serveur n'est pas lancé : seul le CLI lit la base restaurée.
+        - name: Démarrer un conteneur n8n sur les données restaurées
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['apply', '-f', '-'] }}"
+            stdin: |
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                name: restore-n8n
+              spec:
+                securityContext:
+                  runAsUser: 1000
+                  runAsGroup: 1000
+                  fsGroup: 1000
+                containers:
+                  - name: n8n
+                    image: {{ restore_n8n_image }}
+                    command: [sleep, '3600']
+                    env:
+                      - {name: DB_TYPE, value: sqlite}
+                    envFrom:
+                      - secretRef:
+                          name: restore-n8n
+                    volumeMounts:
+                      - {name: data, mountPath: /home/node/.n8n}
+                volumes:
+                  - name: data
+                    persistentVolumeClaim:
+                      claimName: restore-n8n-data
+          changed_when: true
+
+        - name: Attendre le conteneur n8n
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['wait', '--for=condition=Ready', 'pod/restore-n8n', '--timeout=180s'] }}"
+          changed_when: false
+
+        - name: Compter les workflows et déchiffrer les identifiants restaurés
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl + ['exec', 'restore-n8n', '--', 'sh', '-c', restore_count_script] }}"
+          register: restore_counts
+          changed_when: false
+
+        - name: Comparer avec le manifeste de la sauvegarde
+          ansible.builtin.assert:
+            that:
+              - restore_counts.stdout_lines[0] | int == restore_manifest.workflows
+              - restore_counts.stdout_lines[1] | int == restore_manifest.credentials
+            fail_msg: >-
+              Écart avec le manifeste : {{ restore_counts.stdout_lines }} au lieu de
+              {{ restore_manifest.workflows }} workflow(s) et {{ restore_manifest.credentials }}
+              identifiant(s). Vérifier la clé n8n.
+            success_msg: >-
+              Restauration identique au manifeste : {{ restore_manifest.workflows }} workflow(s),
+              {{ restore_manifest.credentials }} identifiant(s) déchiffré(s) avec la clé.
+
+      always:
+        - name: Supprimer le namespace de test
+          ansible.builtin.command:
+            argv: "{{ restore_kubectl[:2] + ['delete', 'namespace', restore_ns, '--ignore-not-found',
+                   '--wait=true', '--timeout=180s'] }}"
+          changed_when: true
+
+        - name: Supprimer les fichiers temporaires du VPS
+          ansible.builtin.file:
+            path: "{{ restore_tmp.path }}"
+            state: absent
+          when: restore_tmp.path is defined

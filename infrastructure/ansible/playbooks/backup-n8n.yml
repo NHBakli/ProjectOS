@@ -1,0 +1,136 @@
+---
+- name: Sauvegarder n8n sur le poste local (volume complet, chiffré)
+  hosts: k3s_candidates
+  gather_facts: false
+  become: true
+  vars:
+    n8n_namespace: n8n
+    n8n_kubectl: [/usr/local/bin/k3s, kubectl, -n, n8n]
+    n8n_pod_selector: app.kubernetes.io/name=n8n,app.kubernetes.io/component=main
+    backup_local_root: "{{ lookup('ansible.builtin.env', 'HOME') }}/projectos-backups"
+    # Compte les identifiants sans les déchiffrer ni les afficher.
+    n8n_count_script: >-
+      n8n list:workflow 2>/dev/null | grep -c . ;
+      n8n export:credentials --all --output=/tmp/projectos-count.json >/dev/null 2>&1
+      && node -e 'console.log(require("/tmp/projectos-count.json").length)' || echo 0 ;
+      rm -f /tmp/projectos-count.json
+  tasks:
+    - name: Exiger la phrase de passe des sauvegardes
+      ansible.builtin.assert:
+        that:
+          - projectos_backup_passphrase | default('') | length >= 32
+        fail_msg: Fournir backup.vault.yml (« scripts/generate-secrets.sh backup »).
+
+    - name: Fixer l'horodatage et le dossier de destination
+      ansible.builtin.set_fact:
+        backup_local_dir: "{{ backup_local_root }}/n8n-{{ now(utc=true, fmt='%Y%m%dT%H%M%SZ') }}"
+
+    - name: Compter les workflows et identifiants
+      ansible.builtin.command:
+        argv: "{{ n8n_kubectl + ['exec', 'deploy/n8n-main', '--', 'sh', '-c', n8n_count_script] }}"
+      register: n8n_counts
+      changed_when: false
+
+    - name: Trouver le volume n8n sur l'hôte
+      ansible.builtin.find:
+        paths: /var/lib/rancher/k3s/storage
+        patterns: "*_{{ n8n_namespace }}_n8n"
+        file_type: directory
+      register: n8n_volume
+
+    - name: Exiger un volume n8n unique
+      ansible.builtin.assert:
+        that:
+          - n8n_volume.files | length == 1
+        fail_msg: Volume n8n introuvable ou ambigu ; arrêt.
+
+    - name: Produire, chiffrer et rapatrier la sauvegarde
+      block:
+        - name: Créer un dossier temporaire protégé sur le VPS
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: projectos-backup-
+          register: backup_tmp
+
+        # SQLite en mode WAL : copier les fichiers à l'arrêt garantit leur cohérence.
+        - name: Archiver le volume avec n8n arrêté quelques secondes
+          block:
+            - name: Arrêter n8n
+              ansible.builtin.command:
+                argv: "{{ n8n_kubectl + ['scale', 'deployment/n8n-main', '--replicas=0'] }}"
+              changed_when: true
+
+            - name: Attendre l'arrêt complet du Pod
+              ansible.builtin.command:
+                argv: "{{ n8n_kubectl + ['wait', '--for=delete', 'pod', '-l', n8n_pod_selector,
+                       '--timeout=120s'] }}"
+              register: n8n_stop_wait
+              changed_when: false
+              # Si le Pod a déjà disparu, kubectl répond « no matching resources ».
+              failed_when: >-
+                n8n_stop_wait.rc != 0 and
+                'no matching resources' not in n8n_stop_wait.stderr | lower
+
+            - name: Archiver le volume n8n
+              ansible.builtin.command:
+                argv: [tar, -C, "{{ n8n_volume.files[0].path }}", -czf,
+                       "{{ backup_tmp.path }}/n8n-data.tar.gz", .]
+              changed_when: true
+
+          always:
+            - name: Redémarrer n8n
+              ansible.builtin.command:
+                argv: "{{ n8n_kubectl + ['scale', 'deployment/n8n-main', '--replicas=1'] }}"
+              changed_when: true
+
+            - name: Attendre que n8n soit de nouveau prêt
+              ansible.builtin.command:
+                argv: "{{ n8n_kubectl + ['rollout', 'status', 'deployment/n8n-main', '--timeout=300s'] }}"
+              changed_when: false
+
+        - name: Écrire le manifeste de la sauvegarde
+          ansible.builtin.copy:
+            dest: "{{ backup_tmp.path }}/manifest.json"
+            mode: '0600'
+            content: >-
+              {{ {'created_utc': backup_local_dir | basename | regex_replace('^n8n-', ''),
+                  'n8n_version': '2.44.5',
+                  'workflows': n8n_counts.stdout_lines[0] | int,
+                  'credentials': n8n_counts.stdout_lines[1] | int} | to_nice_json }}
+
+        - name: Chiffrer l'archive (gpg, AES-256)
+          ansible.builtin.command:
+            argv: [gpg, --homedir, "{{ backup_tmp.path }}", --batch, --yes, --pinentry-mode, loopback,
+                   --passphrase-fd, '0', --symmetric, --cipher-algo, AES256,
+                   --output, "{{ backup_tmp.path }}/n8n-data.tar.gz.gpg", "{{ backup_tmp.path }}/n8n-data.tar.gz"]
+            stdin: "{{ projectos_backup_passphrase }}"
+          changed_when: true
+          no_log: true
+
+        - name: Rapatrier la sauvegarde chiffrée sur le poste
+          ansible.builtin.fetch:
+            src: "{{ backup_tmp.path }}/{{ item }}"
+            dest: "{{ backup_local_dir }}/"
+            flat: true
+          loop: [n8n-data.tar.gz.gpg, manifest.json]
+
+      always:
+        - name: Supprimer les fichiers temporaires du VPS
+          ansible.builtin.file:
+            path: "{{ backup_tmp.path }}"
+            state: absent
+          when: backup_tmp.path is defined
+
+    - name: Restreindre l'accès au dossier local
+      ansible.builtin.file:
+        path: "{{ backup_local_dir }}"
+        mode: '0700'
+      delegate_to: localhost
+      become: false
+
+    - name: Résumer la sauvegarde
+      ansible.builtin.debug:
+        msg:
+          dossier: "{{ backup_local_dir }}"
+          workflows: "{{ n8n_counts.stdout_lines[0] }}"
+          identifiants: "{{ n8n_counts.stdout_lines[1] }}"

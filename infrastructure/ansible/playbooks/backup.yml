@@ -1,0 +1,7 @@
+---
+# Sauvegarde complète : Plane puis n8n. Les deux arrivent dans ~/projectos-backups/.
+- name: Sauvegarder Plane
+  ansible.builtin.import_playbook: backup-plane.yml
+
+- name: Sauvegarder n8n
+  ansible.builtin.import_playbook: backup-n8n.yml

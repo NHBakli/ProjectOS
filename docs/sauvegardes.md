@@ -1,17 +1,18 @@
 # Sauvegardes
 
-Les sauvegardes de Plane sont rapatriées **sur ton poste**, chiffrées.
+Plane et n8n sont sauvegardés **sur ton poste**, chiffrés.
 
 ## Ce qui est sauvegardé
 
-| Donnée | Comment |
-|---|---|
-| Base Plane (projets, tickets, comptes…) | Export PostgreSQL (`pg_dump`) |
-| Fichiers joints | Archive du volume MinIO |
-| Manifeste | Nombre d'utilisateurs, projets, tickets et fichiers au moment de la sauvegarde |
+| Application | Contenu | Interruption |
+|---|---|---|
+| Plane | Base PostgreSQL (`pg_dump`) + fichiers MinIO | Aucune |
+| n8n | Volume complet (base SQLite, réglages) | n8n arrêté ~30 s, puis relancé automatiquement |
+
+Chaque sauvegarde contient un **manifeste** : ce qu'elle contient (nombre de tickets, de workflows…). Le test de restauration s'en sert pour comparer.
 
 Les fichiers sont chiffrés sur le VPS (gpg, AES-256) **avant** d'en sortir.
-Destination : `~/projectos-backups/plane-DATE/`.
+Destination : `~/projectos-backups/plane-DATE/` et `~/projectos-backups/n8n-DATE/`.
 
 ## 1. Créer la phrase de passe (une seule fois)
 
@@ -19,25 +20,27 @@ Destination : `~/projectos-backups/plane-DATE/`.
 ./scripts/generate-secrets.sh backup
 ```
 
-Utilise **le même mot de passe Vault** que pour Plane. Le script crée `~/.config/projectos/backup.vault.yml`.
+Utilise **le même mot de passe Vault** que pour Plane et n8n.
 
-> ⚠️ Sans ce fichier et son mot de passe, les sauvegardes sont illisibles. Garde une copie hors du poste.
+> ⚠️ Sans `backup.vault.yml` et son mot de passe, les sauvegardes sont illisibles. Garde une copie hors du poste.
 
 ## 2. Sauvegarder
 
-À faire au moins une fois par semaine, et **avant chaque mise à jour**.
+Au moins une fois par semaine, et **avant chaque mise à jour**.
 
 ```bash
 ansible-playbook -i ~/.config/projectos/hosts.yml --ask-vault-pass \
   -e @$HOME/.config/projectos/backup.vault.yml \
-  infrastructure/ansible/playbooks/backup-plane.yml
+  infrastructure/ansible/playbooks/backup.yml
 ```
 
-**Attendu :** le dossier créé et le contenu sauvegardé (`users`, `projects`, `issues`…).
+**Attendu :** deux dossiers créés, `failed=0`.
 
 ## 3. Tester la restauration
 
-Teste la **dernière** sauvegarde. Elle est remontée dans un namespace jetable, compare les chiffres avec le manifeste, puis supprime tout. **La production n'est pas touchée.**
+Chaque test remonte la **dernière** sauvegarde dans un namespace jetable, compare avec le manifeste, puis supprime tout. **La production n'est pas touchée.**
+
+Plane :
 
 ```bash
 ansible-playbook -i ~/.config/projectos/hosts.yml --ask-vault-pass \
@@ -48,23 +51,36 @@ ansible-playbook -i ~/.config/projectos/hosts.yml --ask-vault-pass \
   infrastructure/ansible/playbooks/restore-test-plane.yml
 ```
 
+n8n (vérifie aussi que la clé n8n déchiffre bien les identifiants) :
+
+```bash
+ansible-playbook -i ~/.config/projectos/hosts.yml --ask-vault-pass \
+  -e restore_test_approved=true \
+  -e backup_dir=$(ls -d $HOME/projectos-backups/n8n-* | tail -1) \
+  -e @$HOME/.config/projectos/backup.vault.yml \
+  -e @$HOME/.config/projectos/n8n-secrets.vault.yml \
+  infrastructure/ansible/playbooks/restore-test-n8n.yml
+```
+
 **Attendu :** `Restauration identique au manifeste`.
 
-Fais ce test après la première sauvegarde, puis une fois par mois.
+Teste après la première sauvegarde, puis une fois par mois.
 
 ## Restaurer pour de vrai
 
 > ⏳ Procédure pas encore automatisée. Fais-toi accompagner.
 
-Principe : arrêter Plane, réimporter la base (`pg_restore --clean`), remettre les fichiers MinIO, relancer Plane avec **les mêmes secrets** (`plane-secrets.vault.yml`).
+| Application | Principe |
+|---|---|
+| Plane | Arrêter Plane, réimporter la base (`pg_restore --clean`), remettre les fichiers MinIO, relancer avec les **mêmes** secrets |
+| n8n | Arrêter n8n, remplacer le contenu du volume par l'archive, relancer avec la **même** clé |
 
 ## Pas encore couvert
 
-| Donnée | Pourquoi c'est important |
+| Point | Pourquoi c'est important |
 |---|---|
-| Copie hors du poste | Si ton poste disparaît, les sauvegardes aussi. Copie le dossier sur un disque externe ou dans un cloud. |
+| Copie hors du poste | Si ton poste disparaît, les sauvegardes aussi. Copie `~/projectos-backups/` sur un disque externe ou dans un cloud. |
 | Sauvegarde automatique | Pour l'instant, il faut lancer la commande soi-même. |
-| K3s (`/var/lib/rancher/k3s/server/`) | Sans lui, on réinstalle le cluster puis on restaure Plane : c'est faisable, juste plus long. |
-| n8n | À ajouter quand n8n sera déployé. |
+| K3s (`/var/lib/rancher/k3s/server/`) | Sans lui, on réinstalle le cluster puis on restaure les applications : faisable, juste plus long. |
 
 Les certificats HTTPS n'ont pas besoin de sauvegarde : ils sont réémis automatiquement.

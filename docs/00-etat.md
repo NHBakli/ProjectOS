@@ -37,8 +37,7 @@ Mis à jour le 2026-11-01.
 1. Lancer une sauvegarde (`backup.yml`) : le workflow, ses identifiants et la clé DeepL n'en ont encore aucune.
 2. Supprimer les issues et tickets de test (`Frontend#47`, `#48`, `Backend#34`).
 3. Noter les dates d'expiration du token GitHub et de la clé Plane (90 jours si le réglage proposé a été suivi).
-4. `git push` : le dépôt local a des commits non envoyés.
-5. Pour le PLD : date de la prochaine remise, liste des membres (nom, compte Plane, compte GitHub), avis sur la reprise des cartes du Sprint 1 → [plan-pld.md](plan-pld.md).
+4. Pour le PLD : date de la prochaine remise, liste des membres (nom, compte Plane, compte GitHub), avis sur la reprise des cartes du Sprint 1 → [plan-pld.md](plan-pld.md).
 
 ## Journal
 

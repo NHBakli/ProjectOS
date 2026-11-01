@@ -51,6 +51,9 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, {"translations": [{"detected_source_language": "FR", "text": "EN: " + t}
                                                      for t in data["text"]]})
         if self.path.endswith("/graphql"):
+            if data["variables"]["p"] == "PVT_kwDOD8weaM4BjzeI":  # Mobile : simule l'auto-add
+                return self._send(200, {"errors": [{"type": "UNPROCESSABLE",
+                                                    "message": "Content already exists in this project"}]})
             return self._send(200, {"data": {"addProjectV2ItemById": {"item": {"id": "PVTI_x"}}}})
         self._send(404, {})
 

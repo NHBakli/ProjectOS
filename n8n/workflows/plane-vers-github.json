@@ -256,7 +256,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// GraphQL répond 200 même en cas d'erreur : on la fait remonter.\nif ($json.errors) {\n  throw new Error('GitHub Projects : ' + JSON.stringify($json.errors));\n}\nreturn $input.item;\n"
+        "jsCode": "// GraphQL répond 200 même en cas d'erreur : on la fait remonter.\n// « Déjà dans le projet » n'est pas une erreur : l'auto-add du projet GitHub\n// a pu ajouter l'issue avant nous.\nconst erreurs = ($json.errors || [])\n  .filter((e) => !/already exists in this project/i.test(String(e.message || '')));\nif (erreurs.length) {\n  throw new Error('GitHub Projects : ' + JSON.stringify(erreurs));\n}\nreturn $input.item;\n"
       },
       "name": "Contrôle projet GitHub",
       "type": "n8n-nodes-base.code",

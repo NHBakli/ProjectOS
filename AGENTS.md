@@ -20,7 +20,7 @@ Utilisateur : francophone, travaille vite, garde la main sur les choix et lance 
 | Plane CE `v1.4.2` (chart `plane-ce` 1.8.5) | ✅ En ligne, compte admin créé |
 | n8n `2.44.5` (chart 1.17.0, SQLite) | ✅ En ligne, compte propriétaire créé |
 | Sauvegardes | ✅ Plane et n8n chiffrées (gpg) vers le poste, restaurations testées. Lancement manuel. |
-| Workflow Plane → GitHub | 🟡 Installé. Test réel : issue + lien Plane OK ; ajout au projet GitHub **échoue** (cause non lue). Traduction DeepL écrite et testée en local, pas installée. |
+| Workflow Plane → GitHub | ✅ En service avec traduction DeepL. Test réel 2026-11-01 : `Frontend#48`, `Backend#34` OK. |
 
 Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
 
@@ -30,7 +30,8 @@ Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
    - Routage : `frontend` → dépôt `Frontend` + projet 2, `backend` → `Backend` + projet 1, `mobile` → `Mobile` + projet 3, `devops` → `DevOps` (créé le 2026-10-31) + projet 5. Seuls les labels **Plane** comptent ; aucun label n'est posé côté GitHub.
    - Anti-doublon : lien GitHub enregistré dans le ticket Plane, vérifié avant création. Signature HMAC du webhook Plane vérifiée.
    - Vérifié dans le code de Plane v1.4.2 (`webhook_task.py`, API `work-items/…/links/`, en-tête `X-Api-Key`). Testé dans n8n 2.44.5 local avec de fausses API.
-   - Test réel (2026-10-31) : Plane → n8n via l'URL publique OK, issue `Flowly-PBS/Frontend#47` + lien Plane OK. **Ajout au projet GitHub absent** : lire l'erreur de l'exécution n8n (permission Projects du token ?).
+   - Test réel (2026-11-01) : Plane → n8n via l'URL publique, traduction, issues, liens Plane et projets OK. Les projets GitHub ont un **auto-add** qui ajoute l'issue avant n8n : « Content already exists in this project » est traité comme un succès. Le projet 4 « Devops » auto-ajoute aussi les issues de `Backend`.
+   - Dans le n8n de l'utilisateur, les nœuds portent un suffixe `1` (import dans un workflow existant). Ne pas s'en étonner sur les captures.
    - Traduction : DeepL API Free (identifiant n8n `DeepL`, en-tête `Authorization: DeepL-Auth-Key …`), FR → EN-US, original FR dans `<details>`. Si DeepL échoue, issue en français avec avertissement.
 2. **Sauvegardes** : copie hors du poste (disque externe ou cloud), puis automatisation. Le datastore K3s n'est pas encore sauvegardé.
 3. **Vrai domaine** (ou DuckDNS) avant d'inviter l'équipe. Il faudra changer les URL de Plane, n8n et des webhooks.

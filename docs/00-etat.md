@@ -28,7 +28,7 @@ Mis à jour le 2026-10-31.
 
 ## Ce qui reste
 
-1. Workflow Plane → GitHub : corriger l'ajout au projet GitHub, puis installer la traduction DeepL → [06-plane-github.md](06-plane-github.md)
+1. Workflow Plane → GitHub : mettre à jour le nœud « Contrôle projet GitHub » dans n8n → [06-plane-github.md](06-plane-github.md)
 2. Copier les sauvegardes hors du poste, puis les automatiser → [sauvegardes.md](sauvegardes.md)
 3. Passer à un vrai domaine avant d'inviter l'équipe → [03-https.md](03-https.md)
 
@@ -49,6 +49,7 @@ Mis à jour le 2026-10-31.
 | 2026-10-31 | Sens choisi : Plane → GitHub, routage par label vers les dépôts de Flowly-PBS. Workflow écrit d'après le code de Plane v1.4.2, testé dans n8n 2.44.5 local (7 cas, 0 échec). Pas encore installé. |
 | 2026-10-31 | Workflow installé. Test réel : issue `Frontend#47` créée avec le lien Plane, mais **pas ajoutée** au projet GitHub « Frontend Team » (cause à lire dans l'exécution n8n). |
 | 2026-10-31 | Traduction FR → EN par DeepL API Free ajoutée au workflow (original FR replié). Testée en local (8 cas, 0 échec). Pas encore installée. |
+| 2026-11-01 | Workflow avec traduction installé. Test réel réussi : `Frontend#48` et `Backend#34` en anglais, original FR, lien Plane, dans leurs projets. Fausse erreur « already exists in this project » (auto-add GitHub) corrigée dans le workflow. |
 | 2026-10-31 | 1ʳᵉ sauvegarde Plane rapatriée (chiffrée). Test de restauration réussi : données identiques (2 utilisateurs, 1 projet, 7 tickets). Aucun fichier joint à ce moment-là. |
 
 ## Bugs corrigés en route

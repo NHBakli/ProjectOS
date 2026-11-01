@@ -18,6 +18,8 @@ Fichier à importer : [`n8n/workflows/plane-vers-github.json`](../n8n/workflows/
 3. Pour chaque label d'équipe, n8n regarde les liens du ticket Plane. Si un lien vers une issue de ce dépôt existe déjà, il ne fait rien : **pas de doublon**.
 4. Sinon : traduction du titre et de la description par DeepL, création de l'issue, lien ajouté dans le ticket Plane, ajout au projet GitHub.
 
+Si un projet GitHub a un **auto-add** (workflow intégré de GitHub Projects), il ajoute l'issue lui-même, parfois dans un projet de plus (ex. le projet 4 « Devops » ajoute les issues de `Backend`). C'est réglé dans GitHub, pas dans n8n.
+
 L'issue contient le texte anglais, puis le texte français d'origine dans une section repliable **Original (FR)**, puis le lien du ticket Plane.
 Si DeepL ne répond pas (quota, panne), l'issue est quand même créée, en français, avec l'avertissement `Translation unavailable`.
 
@@ -147,7 +149,7 @@ Colle-moi le résultat (ou l'erreur de n8n), sans token ni secret.
 | Exécution réussie mais rien de créé | Label absent ou mal écrit, ou mauvais ID de projet dans « Équipes à traiter » |
 | 401 ou 403 sur un nœud GitHub | Token expiré, mauvaises permissions, ou approbation de l'organisation en attente |
 | 401 ou 404 sur un nœud Plane | Clé API Plane, slug ou ID de projet incorrect |
-| Erreur sur **Contrôle projet GitHub** | Le token n'a pas la permission **Projects** de l'organisation |
+| Erreur sur **Contrôle projet GitHub** | Le token n'a pas la permission **Projects** de l'organisation. (« already exists in this project » n'est plus une erreur : l'auto-add du projet GitHub l'a ajoutée avant.) |
 | Issue en français avec `Translation unavailable` | Clé DeepL absente ou fausse, quota dépassé, ou DeepL en panne. Ouvrir le nœud **Traduire (DeepL)** dans l'exécution pour voir l'erreur. |
 | Erreur 403 sur **Traduire (DeepL)** | Clé fausse, ou clé payante (sans `:fx`) : l'adresse du nœud doit alors être `https://api.deepl.com/v2/translate` |
 

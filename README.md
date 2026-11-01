@@ -17,7 +17,7 @@ Tout s'installe depuis ton poste avec **Ansible**. Rien ne se modifie à la main
 | Plane | ✅ En ligne (v1.4.2), compte admin créé |
 | n8n | ✅ En ligne (v2.44.5), compte propriétaire créé |
 | Sauvegardes | ✅ Plane et n8n, restaurations testées. Copie hors poste et automatisation à faire. |
-| Workflow Plane → GitHub | 🟡 Installé : issue et lien Plane OK. Ajout au projet GitHub à corriger. Traduction DeepL à installer. |
+| Workflow Plane → GitHub | ✅ En service, avec traduction FR → EN (DeepL) |
 
 Détails et historique : [docs/00-etat.md](docs/00-etat.md).
 

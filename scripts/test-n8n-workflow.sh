@@ -86,5 +86,18 @@ verifier sans_label_equipe secret-test 0
 verifier creation mauvais-secret 0       # signature refusée
 verifier deepl_en_panne secret-test 1 'Translation unavailable'   # DeepL en panne : issue en français
 
+# Une seule exécution en erreur attendue : la mauvaise signature.
+erreurs_n8n=$(docker exec "$nom" node -e "
+const { DatabaseSync } = require('node:sqlite');
+const db = new DatabaseSync('/home/node/.n8n/database.sqlite', { readOnly: true });
+console.log(db.prepare(\"select count(*) as n from execution_entity where status != 'success'\").get().n);
+" 2>/dev/null)
+if [[ "$erreurs_n8n" == 1 ]]; then
+  echo "OK    exécutions n8n : 1 seule en erreur (mauvaise signature)"
+else
+  echo "ÉCHEC exécutions n8n : $erreurs_n8n en erreur, attendu 1"
+  echecs=$((echecs + 1))
+fi
+
 echo "Résultat : $echecs échec(s)"
 [[ "$echecs" == 0 ]]

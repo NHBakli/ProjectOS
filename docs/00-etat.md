@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 2026-10-31.
+Mis à jour le 2026-11-01.
 
 ## Le serveur
 
@@ -31,6 +31,14 @@ Mis à jour le 2026-10-31.
 1. Générer le PLD depuis Plane et GitHub : plan prêt → [plan-pld.md](plan-pld.md)
 2. Copier les sauvegardes hors du poste, puis les automatiser → [sauvegardes.md](sauvegardes.md)
 3. Passer à un vrai domaine avant d'inviter l'équipe → [03-https.md](03-https.md)
+
+## À faire de ton côté (en attente)
+
+1. Lancer une sauvegarde (`backup.yml`) : le workflow, ses identifiants et la clé DeepL n'en ont encore aucune.
+2. Supprimer les issues et tickets de test (`Frontend#47`, `#48`, `Backend#34`).
+3. Noter les dates d'expiration du token GitHub et de la clé Plane (90 jours si le réglage proposé a été suivi).
+4. `git push` : le dépôt local a des commits non envoyés.
+5. Pour le PLD : date de la prochaine remise, liste des membres (nom, compte Plane, compte GitHub), avis sur la reprise des cartes du Sprint 1 → [plan-pld.md](plan-pld.md).
 
 ## Journal
 

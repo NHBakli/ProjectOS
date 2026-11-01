@@ -10,7 +10,29 @@ Tout s'installe depuis le poste local avec **Ansible**. On n'écrit pas d'applic
 
 Utilisateur : francophone, travaille vite, garde la main sur les choix et lance lui-même les commandes qui modifient le VPS. Équipe prévue : 5–7 personnes. Pas de haute disponibilité.
 
-## État au 2026-10-31
+## Le projet géré : Flowly (Epitech ESP)
+
+Project OS sert à piloter **Flowly** : application de productivité gamifiée (desktop + mobile, sessions de focus, points, monde 3D), projet Epitech ESP d'une équipe de 7.
+**Motivation principale de l'utilisateur : générer automatiquement le PLD** (Project Log Document) Epitech à partir de Plane et GitHub.
+
+| Élément | Valeur |
+|---|---|
+| Organisation GitHub | `Flowly-PBS` : dépôts `Frontend`, `Backend`, `Mobile`, `DevOps` (créé le 2026-10-31), `Documentation` (public), `Contenu3D` |
+| Projets GitHub | 1 « Flowly team back », 2 « Frontend Team », 3 « Mobile Team », 4 « Devops » (auto-add des issues `Backend`), 5 « DevOps Team ». IDs dans le workflow n8n. |
+| Plane | Espace de travail `flowly`, projet Flowly `4574eea4-a44e-433f-b57e-435859d0d726`, étiquettes `Frontend`, `Backend`, `DevOps`, `Mobile` |
+| n8n | Workflow « Plane vers GitHub (Flowly-PBS) », identifiants `Plane API`, `GitHub token` (fine-grained, Flowly-PBS), `DeepL` (API Free). Secret du webhook Plane dans le nœud **Signature HMAC1**. |
+| Équipe (noms ↔ comptes GitHub) | `Flowly-PBS/Documentation` → `PLD/PLD_Releve_Sprint_1.md`. **Ne pas recopier dans ce dépôt public.** |
+| PLD Sprint 1 | Fait à la main : `Flowly-PBS/Documentation` → `PLD/1st Keynote/1st Follow-up/` |
+
+## Travailler avec l'utilisateur
+
+- Il fait lui-même les étapes dans les interfaces web (Plane en **français**, n8n et GitHub en **anglais**) et envoie des captures. Le guider **clic par clic**, avec les libellés exacts.
+- Libellés et chemins Plane : les vérifier dans le code source v1.4.2 (`packages/i18n/src/locales/fr/`, routes `apps/web/app/`) avant de les donner.
+- Ne jamais lui demander de coller un token, une clé ou un secret. S'il colle l'IP du serveur, ne pas la répéter.
+- Pour un choix qui lui revient : questions à options, avec une recommandation.
+- n8n 2.x : après une modification, **Save** puis **Publish**, sinon l'ancienne version reste active.
+
+## État au 2026-11-01
 
 | Brique | État |
 |---|---|

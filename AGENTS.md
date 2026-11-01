@@ -27,7 +27,7 @@ Project OS sert à piloter **Flowly** : application de productivité gamifiée (
 ## Travailler avec l'utilisateur
 
 - Il fait lui-même les étapes dans les interfaces web (Plane en **français**, n8n et GitHub en **anglais**) et envoie des captures. Le guider **clic par clic**, avec les libellés exacts.
-- Libellés et chemins Plane : les vérifier dans le code source v1.4.2 (`packages/i18n/src/locales/fr/`, routes `apps/web/app/`) avant de les donner.
+- Libellés et chemins Plane : les vérifier dans le code source v1.4.2 (`packages/i18n/src/locales/fr/`, routes `apps/web/app/`) avant de les donner. Le code n'est pas gardé sur le poste : `git clone --depth 1 --branch v1.4.2 https://github.com/makeplane/plane.git` dans le dossier temporaire de la session. API publique : `apps/api/plane/api/` (urls, views, serializers).
 - Ne jamais lui demander de coller un token, une clé ou un secret. S'il colle l'IP du serveur, ne pas la répéter.
 - Pour un choix qui lui revient : questions à options, avec une recommandation.
 - n8n 2.x : après une modification, **Save** puis **Publish**, sinon l'ancienne version reste active.
@@ -47,6 +47,28 @@ Project OS sert à piloter **Flowly** : application de productivité gamifiée (
 Workflow Plane → GitHub (`docs/06-plane-github.md`) : label Plane `frontend`/`backend`/`mobile`/`devops` → dépôt + projet GitHub de Flowly-PBS, traduction DeepL, anti-doublon par lien dans le ticket. Les projets GitHub ont un auto-add (« already exists in this project » = succès). Dans le n8n de l'utilisateur, les nœuds ont un suffixe `1`.
 
 Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
+
+## Reprise en cours (2026-11-01, avant un reboot)
+
+Sujet : **reprendre l'historique ClickUp dans Plane** (étape 0 du PLD). Guide : `docs/07-import-clickup.md`.
+
+| | |
+|---|---|
+| Choix de l'utilisateur | Extraction par l'**API ClickUp** (token personnel saisi en masqué, jamais collé). Anciennes sprints = **cycles Plane** avec leurs vraies dates. |
+| Fait | `pld/clickup_extraire.py` (GET seulement, JSON dans `~/projectos-pld/clickup/`, droits 600, résumé sans e-mail). 3 tests dans `pld/tests/`, lancés par `validate.sh`. Commit `97b9721`. |
+| Pas fait | Aucune extraction réelle lancée. Libellés de l'interface ClickUp (Settings → Apps → API Token) non vérifiés dans une source. |
+| En attente de l'utilisateur | 1) Le **résumé** de l'extraction. 2) Les issues GitHub du Sprint 1 viennent-elles des mêmes tâches ClickUp ? 3) Une sauvegarde Plane (`backup.yml`) avant tout import. |
+| À écrire ensuite | `pld/clickup_importer.py` : correspondances dans `~/.config/projectos/pld.yml` (statut ClickUp → état Plane, membre → compte Plane, tag → étiquette, points → estimation), essai à blanc, essai dans un projet Plane jetable, puis import réel. |
+
+Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) :
+
+| Contrainte | Où | Parade |
+|---|---|---|
+| Pas d'importeur dans la CE (la page « Importations » n'existe pas) | `packages/constants/src/settings/workspace.ts` | Script par l'API |
+| Ajout de tickets à un cycle terminé refusé (`CYCLE_COMPLETED`), et un cycle terminé ne se modifie plus | `api/views/cycle.py` (~l. 561 et 982) | Créer le cycle avec une fin future, ajouter les tickets, puis PATCH des vraies dates |
+| `completed_at` en lecture seule, mis à `now()` au passage à l'état terminé | `db/models/issue.py` `_sync_completed_at` | Vraie date de fin dans la description (« Terminé le : »), lue par le générateur de PLD |
+| Anti-doublon natif : `external_source` + `external_id` (409 si déjà présent, filtre en GET) | `api/views/issue.py` (~l. 331, 468) | `external_source=clickup`, `external_id` = ID de la tâche |
+| Un ticket créé avec l'étiquette `Frontend`/`Backend`… déclenche le workflow n8n → issue GitHub | workflow n8n | Importer sans étiquette d'équipe, ou faire ignorer à n8n les tickets `external_source=clickup` (vérifier d'abord que le webhook contient ce champ) |
 
 ## La suite (dans l'ordre)
 

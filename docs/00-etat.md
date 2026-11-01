@@ -34,10 +34,13 @@ Mis à jour le 2026-11-01.
 
 ## À faire de ton côté (en attente)
 
-1. Lancer une sauvegarde (`backup.yml`) : le workflow, ses identifiants et la clé DeepL n'en ont encore aucune.
-2. Supprimer les issues et tickets de test (`Frontend#47`, `#48`, `Backend#34`).
-3. Noter les dates d'expiration du token GitHub et de la clé Plane (90 jours si le réglage proposé a été suivi).
-4. Pour le PLD : date de la prochaine remise, liste des membres (nom, compte Plane, compte GitHub), avis sur la reprise des cartes du Sprint 1 → [plan-pld.md](plan-pld.md).
+1. **Extraire ClickUp** et coller le résumé affiché (sans e-mail) → [07-import-clickup.md](07-import-clickup.md), section 1.
+2. Dire si les issues GitHub du Sprint 1 viennent des mêmes tâches ClickUp (pour éviter les doublons à l'import).
+3. Lancer une sauvegarde (`backup.yml`) : le workflow, ses identifiants et la clé DeepL n'en ont encore aucune. Obligatoire avant l'import ClickUp.
+4. Supprimer les issues et tickets de test (`Frontend#47`, `#48`, `Backend#34`).
+5. Noter les dates d'expiration du token GitHub et de la clé Plane (90 jours si le réglage proposé a été suivi).
+6. Pour le PLD : date de la prochaine remise, liste des membres (nom, compte Plane, compte GitHub) → [plan-pld.md](plan-pld.md).
+7. `git push` des derniers commits.
 
 ## Journal
 

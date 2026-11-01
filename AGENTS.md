@@ -51,6 +51,7 @@ Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
 ## La suite (dans l'ordre)
 
 1. **Générer le PLD Epitech depuis Plane + GitHub** : plan validé dans `docs/plan-pld.md`, **à implémenter** (étapes 1 à 7). Choix de l'utilisateur : script sur le poste, modèle de description dans les tickets, chiffres + texte fixe, période = entre deux remises. Modèles officiels hors Git : `~/Downloads/PLD_Template.docx`, `PLD_Suivi_Taches.xlsx`, `Processus_PLD (1).pdf`. Brouillon du Sprint 1 : dépôt `Flowly-PBS/Documentation`, dossier `PLD/`. Commencer par les « Points à trancher » du plan.
+   **Étape 0 en cours : reprise de l'historique ClickUp** (API ClickUp, anciennes sprints = cycles Plane) → `docs/07-import-clickup.md`. Extraction écrite (`pld/clickup_extraire.py`), en attente du résumé de l'utilisateur pour écrire les correspondances et l'import.
 2. **Sauvegardes** : copie hors du poste (disque externe ou cloud), puis automatisation. Le datastore K3s n'est pas encore sauvegardé.
 3. **Vrai domaine** (ou DuckDNS) avant d'inviter l'équipe. Il faudra changer les URL de Plane, n8n et des webhooks.
 4. Plus tard : observabilité légère, CI de déploiement, GitOps seulement quand les restaurations sont fiables. n8n signale que le mode « task runner interne » sera retiré : passer en runners externes lors d'une mise à jour.
@@ -75,6 +76,8 @@ Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
 | `kubernetes/` | Manifests cert-manager et smoke tests |
 | `scripts/generate-secrets.sh plane\|backup\|n8n` | Crée les secrets directement chiffrés (Vault), un seul mot de passe |
 | `n8n/workflows/` | Workflows n8n à importer (sans secret ni domaine) |
+| `pld/` | Générateur de PLD (en cours) : `clickup_extraire.py`, tests dans `pld/tests/` (lancés par `validate.sh`) |
+| `~/projectos-pld/` (hors Git) | Extractions ClickUp (contiennent noms et e-mails) |
 | `scripts/test-n8n-workflow.sh` | Teste un workflow dans un n8n local (Docker) face à de fausses API Plane/GitHub |
 | `~/.config/projectos/` (hors Git) | `hosts.yml`, `k3s-approval.yml`, `platform.yml`, `*.vault.yml` |
 | `~/projectos-backups/` (hors Git) | Sauvegardes chiffrées |

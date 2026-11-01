@@ -26,6 +26,7 @@ Tu relis, tu corriges dans Plane si besoin, tu relances, puis tu déposes dans l
 | Fiches stories | Modèle de description dans chaque ticket Plane. Le script extrait les rubriques et signale les manques. |
 | Parties rédigées | Chiffres calculés + phrases types. Textes libres (présentation, schéma, plan alpha/bêta) dans un fichier de config. |
 | Période | Un PLD = entre deux remises (Keynote 2 → Follow-up 1…). Les sprints Scrum de 2 semaines = cycles Plane. |
+| Historique ClickUp | Repris dans Plane par l'API ClickUp (lecture seule), anciennes sprints = cycles Plane. Guide : [07-import-clickup.md](07-import-clickup.md). |
 
 ## Ce qu'exige Epitech (`Processus_PLD.pdf`)
 
@@ -133,19 +134,20 @@ Accès :
 
 Chaque étape se termine par un test qui passe.
 
+0. **Reprise ClickUp** : extraction ✅ (`pld/clickup_extraire.py`), correspondances et import à faire → [07-import-clickup.md](07-import-clickup.md).
 1. **Squelette** : dossier `pld/`, config d'exemple, `generer-pld.sh`, dépendances épinglées. Test : `--aide` s'affiche.
 2. **Lecture Plane** + fausses données. Test local. Puis tu lances `--extraire` (lecture seule, JSON sans secret) sur le vrai Plane.
 3. **Lecture GitHub** + croisement. Test sur les vraies issues (lecture seule, depuis mon poste).
 4. **Contrôles** + `rapport-coherence.md`. Test : chaque contrôle a un cas qui le déclenche.
 5. **Classeur Excel**. Test : ouverture du fichier, contenu des cellules relu par le test.
 6. **PLD Word**. Test : conversion en PDF avec LibreOffice, relecture visuelle.
-7. **Doc** `docs/07-pld.md` (guide pas à pas) et premier vrai PLD, que tu relis.
+7. **Doc** `docs/08-pld.md` (guide pas à pas) et premier vrai PLD, que tu relis.
 
 ## Points à trancher demain
 
 | Question | Proposition |
 |---|---|
-| Cartes du Sprint 1 (dans GitHub seulement, pas dans Plane) | Les reprendre une fois dans Plane, **sans étiquette d'équipe** et avec leur lien GitHub déjà ajouté, sinon le workflow recréerait les issues. Script d'import séparé, lancé une fois. |
+| Cartes des anciennes sprints | Tranché : reprises depuis ClickUp (voir étape 0). Reste à voir le lien avec les issues GitHub déjà créées. |
 | ID des cartes | Identifiant Plane (`FLOW-12`) : unique et retrouvable. Le modèle Excel utilise `1.1`, `1.2`… : on peut l'afficher en plus. |
 | Date de la prochaine remise | À me donner : elle fixe la période du Sprint 2. |
 | Liste des membres | Nom complet, compte Plane, compte GitHub (le brouillon du Sprint 1 en donne une partie). |

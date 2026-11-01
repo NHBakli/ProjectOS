@@ -21,3 +21,4 @@ for playbook in infrastructure/ansible/playbooks/*.yml; do
   ansible-playbook --syntax-check "$playbook"
 done
 ansible-lint infrastructure/ansible/playbooks/*.yml
+python3 -m unittest discover -s pld/tests

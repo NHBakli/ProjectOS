@@ -22,17 +22,13 @@ Utilisateur : francophone, travaille vite, garde la main sur les choix et lance 
 | Sauvegardes | ✅ Plane et n8n chiffrées (gpg) vers le poste, restaurations testées. Lancement manuel. |
 | Workflow Plane → GitHub | ✅ En service avec traduction DeepL. Test réel 2026-11-01 : `Frontend#48`, `Backend#34` OK. |
 
+Workflow Plane → GitHub (`docs/06-plane-github.md`) : label Plane `frontend`/`backend`/`mobile`/`devops` → dépôt + projet GitHub de Flowly-PBS, traduction DeepL, anti-doublon par lien dans le ticket. Les projets GitHub ont un auto-add (« already exists in this project » = succès). Dans le n8n de l'utilisateur, les nœuds ont un suffixe `1`.
+
 Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
 
 ## La suite (dans l'ordre)
 
-1. **Installer le workflow Plane → GitHub** (`docs/06-plane-github.md`). Choix de l'utilisateur : sens **Plane → GitHub**, création seulement ; **un seul projet Plane** avec labels d'équipe ; organisation GitHub **Flowly-PBS**.
-   - Routage : `frontend` → dépôt `Frontend` + projet 2, `backend` → `Backend` + projet 1, `mobile` → `Mobile` + projet 3, `devops` → `DevOps` (créé le 2026-10-31) + projet 5. Seuls les labels **Plane** comptent ; aucun label n'est posé côté GitHub.
-   - Anti-doublon : lien GitHub enregistré dans le ticket Plane, vérifié avant création. Signature HMAC du webhook Plane vérifiée.
-   - Vérifié dans le code de Plane v1.4.2 (`webhook_task.py`, API `work-items/…/links/`, en-tête `X-Api-Key`). Testé dans n8n 2.44.5 local avec de fausses API.
-   - Test réel (2026-11-01) : Plane → n8n via l'URL publique, traduction, issues, liens Plane et projets OK. Les projets GitHub ont un **auto-add** qui ajoute l'issue avant n8n : « Content already exists in this project » est traité comme un succès. Le projet 4 « Devops » auto-ajoute aussi les issues de `Backend`.
-   - Dans le n8n de l'utilisateur, les nœuds portent un suffixe `1` (import dans un workflow existant). Ne pas s'en étonner sur les captures.
-   - Traduction : DeepL API Free (identifiant n8n `DeepL`, en-tête `Authorization: DeepL-Auth-Key …`), FR → EN-US, original FR dans `<details>`. Si DeepL échoue, issue en français avec avertissement.
+1. **Générer le PLD Epitech depuis Plane + GitHub** : plan validé dans `docs/plan-pld.md`, **à implémenter** (étapes 1 à 7). Choix de l'utilisateur : script sur le poste, modèle de description dans les tickets, chiffres + texte fixe, période = entre deux remises. Modèles officiels hors Git : `~/Downloads/PLD_Template.docx`, `PLD_Suivi_Taches.xlsx`, `Processus_PLD (1).pdf`. Brouillon du Sprint 1 : dépôt `Flowly-PBS/Documentation`, dossier `PLD/`. Commencer par les « Points à trancher » du plan.
 2. **Sauvegardes** : copie hors du poste (disque externe ou cloud), puis automatisation. Le datastore K3s n'est pas encore sauvegardé.
 3. **Vrai domaine** (ou DuckDNS) avant d'inviter l'équipe. Il faudra changer les URL de Plane, n8n et des webhooks.
 4. Plus tard : observabilité légère, CI de déploiement, GitOps seulement quand les restaurations sont fiables. n8n signale que le mode « task runner interne » sera retiré : passer en runners externes lors d'une mise à jour.

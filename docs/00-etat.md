@@ -28,7 +28,7 @@ Mis à jour le 2026-10-31.
 
 ## Ce qui reste
 
-1. Workflow Plane → GitHub : mettre à jour le nœud « Contrôle projet GitHub » dans n8n → [06-plane-github.md](06-plane-github.md)
+1. Générer le PLD depuis Plane et GitHub : plan prêt → [plan-pld.md](plan-pld.md)
 2. Copier les sauvegardes hors du poste, puis les automatiser → [sauvegardes.md](sauvegardes.md)
 3. Passer à un vrai domaine avant d'inviter l'équipe → [03-https.md](03-https.md)
 

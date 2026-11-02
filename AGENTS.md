@@ -32,7 +32,7 @@ Project OS sert à piloter **Flowly** : application de productivité gamifiée (
 - Pour un choix qui lui revient : questions à options, avec une recommandation.
 - n8n 2.x : après une modification, **Save** puis **Publish**, sinon l'ancienne version reste active.
 
-## État au 2026-11-01
+## État au 2026-11-03
 
 | Brique | État |
 |---|---|
@@ -41,7 +41,7 @@ Project OS sert à piloter **Flowly** : application de productivité gamifiée (
 | HTTPS | ✅ Traefik (fourni par K3s) + cert-manager `v1.21.3` + Let's Encrypt. Domaine **provisoire sslip.io**. |
 | Plane CE `v1.4.2` (chart `plane-ce` 1.8.5) | ✅ En ligne, compte admin créé |
 | n8n `2.44.5` (chart 1.17.0, SQLite) | ✅ En ligne, compte propriétaire créé |
-| Sauvegardes | ✅ Plane et n8n chiffrées (gpg) vers le poste, restaurations testées. Lancement manuel. |
+| Sauvegardes | ✅ Plane et n8n chiffrées (gpg) vers le poste, restaurations testées. Lancement manuel. Dernières : 2026-11-02 (avant l'import ClickUp). |
 | Workflow Plane → GitHub | ✅ En service avec traduction DeepL. Test réel 2026-11-01 : `Frontend#48`, `Backend#34` OK. |
 
 Workflow Plane → GitHub (`docs/06-plane-github.md`) : label Plane `frontend`/`backend`/`mobile`/`devops` → dépôt + projet GitHub de Flowly-PBS, traduction DeepL, anti-doublon par lien dans le ticket. Les projets GitHub ont un auto-add (« already exists in this project » = succès). Dans le n8n de l'utilisateur, les nœuds ont un suffixe `1`.
@@ -75,7 +75,8 @@ Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) 
 ## La suite (dans l'ordre)
 
 1. **Générer le PLD Epitech depuis Plane + GitHub** : plan validé dans `docs/plan-pld.md`, **à implémenter** (étapes 1 à 7). Choix de l'utilisateur : script sur le poste, modèle de description dans les tickets, chiffres + texte fixe, période = entre deux remises. Modèles officiels hors Git : `~/Downloads/PLD_Template.docx`, `PLD_Suivi_Taches.xlsx`, `Processus_PLD (1).pdf`. Brouillon du Sprint 1 : dépôt `Flowly-PBS/Documentation`, dossier `PLD/`. Commencer par les « Points à trancher » du plan.
-   **Étape 0 en cours : reprise de l'historique ClickUp** (API ClickUp, anciennes sprints = cycles Plane) → `docs/07-import-clickup.md`. Extraction écrite (`pld/clickup_extraire.py`), en attente du résumé de l'utilisateur pour écrire les correspondances et l'import.
+   **Étape 0 presque finie : reprise de l'historique ClickUp** → `docs/07-import-clickup.md`. Extraction, correspondances, importeur et essai dans un projet jetable : faits et validés. Reste l'import réel (voir « Reprise en cours »).
+   **Ensuite** : revoir `docs/plan-pld.md` après le changement de cap (tâches créées dans GitHub), trancher ses « Points à trancher », puis l'étape 1 (squelette). Les tickets parents (phases, sprints) ne comptent pas comme des cartes.
 2. **Sauvegardes** : copie hors du poste (disque externe ou cloud), puis automatisation. Le datastore K3s n'est pas encore sauvegardé.
 3. **Vrai domaine** (ou DuckDNS) avant d'inviter l'équipe. Il faudra changer les URL de Plane, n8n et des webhooks.
 4. Plus tard : observabilité légère, CI de déploiement, GitOps seulement quand les restaurations sont fiables. n8n signale que le mode « task runner interne » sera retiré : passer en runners externes lors d'une mise à jour.

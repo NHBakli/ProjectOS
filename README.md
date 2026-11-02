@@ -37,7 +37,7 @@ Suis les guides dans l'ordre :
 - [Secrets](docs/secrets.md) : où ils sont et comment ils sont créés.
 - [Sauvegardes](docs/sauvegardes.md) : quoi sauvegarder.
 - [Choix techniques](docs/decisions.md) : ce qu'on a choisi, et pourquoi.
-- [Reprendre l'historique ClickUp](docs/07-import-clickup.md) : extraction prête, import à écrire.
+- [Reprendre l'historique ClickUp](docs/07-import-clickup.md) : importeur prêt, essai validé, import réel à lancer.
 - [Plan du générateur de PLD](docs/plan-pld.md) : à implémenter.
 - [AGENTS.md](AGENTS.md) : contexte et règles pour les agents IA (Codex, Claude Code…).
 

@@ -32,6 +32,13 @@ Mis à jour le 2026-11-03.
 2. Copier les sauvegardes hors du poste, puis les automatiser → [sauvegardes.md](sauvegardes.md)
 3. Passer à un vrai domaine avant d'inviter l'équipe → [03-https.md](03-https.md)
 
+## Reprendre ici (prochaine session)
+
+1. Supprimer le projet jetable `test` dans Plane.
+2. Import réel : `python3 pld/clickup_importer.py --appliquer` → [07-import-clickup.md](07-import-clickup.md), section 4.5. Attendu : `Terminé : 42 ticket(s), 33 lien(s), 4 cycle(s) créés, 0 ticket(s) complétés.`
+3. Supprimer la clé Plane « Import ClickUp », régénérer le token ClickUp, `git push`.
+4. Revoir [plan-pld.md](plan-pld.md) : les prochaines tâches naissent dans GitHub.
+
 ## À faire de ton côté (en attente)
 
 1. **Importer ClickUp dans Plane** : essai dans le projet jetable validé. Reste : supprimer le projet `test`, import réel, puis supprimer la clé Plane « Import ClickUp » et régénérer le token ClickUp → [07-import-clickup.md](07-import-clickup.md), section 4.5.

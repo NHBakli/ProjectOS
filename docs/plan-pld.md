@@ -26,7 +26,9 @@ Tu relis, tu corriges dans Plane si besoin, tu relances, puis tu déposes dans l
 | Fiches stories | Modèle de description dans chaque ticket Plane. Le script extrait les rubriques et signale les manques. |
 | Parties rédigées | Chiffres calculés + phrases types. Textes libres (présentation, schéma, plan alpha/bêta) dans un fichier de config. |
 | Période | Un PLD = entre deux remises (Keynote 2 → Follow-up 1…). Les sprints Scrum de 2 semaines = cycles Plane. |
-| Historique ClickUp | Repris dans Plane par l'API ClickUp (lecture seule), anciennes sprints = cycles Plane. Guide : [07-import-clickup.md](07-import-clickup.md). |
+| Historique ClickUp | Repris dans Plane par l'API : chaque phase/sprint = un ticket parent (ses sous-tickets) **et** un cycle. Guide : [07-import-clickup.md](07-import-clickup.md). |
+
+> ⚠️ **À revoir (2026-11-02)** : l'utilisateur créera les prochaines tâches **directement dans GitHub**, plus dans Plane. Plane garde l'historique ; les backlogs GitHub disent qui a fait quoi et ce qui est fini. À trancher avant l'étape 1 : source de vérité des cartes, où mettre les estimations et les fiches stories, sens du workflow n8n (Plane → GitHub aujourd'hui).
 
 ## Ce qu'exige Epitech (`Processus_PLD.pdf`)
 
@@ -134,7 +136,7 @@ Accès :
 
 Chaque étape se termine par un test qui passe.
 
-0. **Reprise ClickUp** : extraction ✅ (`pld/clickup_extraire.py`), correspondances et import à faire → [07-import-clickup.md](07-import-clickup.md).
+0. **Reprise ClickUp** : extraction ✅, correspondances ✅, importeur ✅ (`pld/clickup_importer.py`), essai dans un projet jetable ✅. Import réel à lancer → [07-import-clickup.md](07-import-clickup.md).
 1. **Squelette** : dossier `pld/`, config d'exemple, `generer-pld.sh`, dépendances épinglées. Test : `--aide` s'affiche.
 2. **Lecture Plane** + fausses données. Test local. Puis tu lances `--extraire` (lecture seule, JSON sans secret) sur le vrai Plane.
 3. **Lecture GitHub** + croisement. Test sur les vraies issues (lecture seule, depuis mon poste).
@@ -147,8 +149,9 @@ Chaque étape se termine par un test qui passe.
 
 | Question | Proposition |
 |---|---|
-| Cartes des anciennes sprints | Tranché : reprises depuis ClickUp (voir étape 0). Reste à voir le lien avec les issues GitHub déjà créées. |
-| ID des cartes | Identifiant Plane (`FLOW-12`) : unique et retrouvable. Le modèle Excel utilise `1.1`, `1.2`… : on peut l'afficher en plus. |
+| Cartes des anciennes sprints | Tranché : reprises depuis ClickUp, avec un lien vers leur issue GitHub quand elle existe (aucune issue recréée). Les tickets parents (phases, sprints) ne sont pas des cartes. La vraie date de fin est dans la description (« Terminé le : »). |
+| Cartes futures | **Nouveau** : créées dans GitHub. Voir l'encadré « À revoir » plus haut. |
+| ID des cartes | Identifiant Plane (`FLOWL-12`) : unique et retrouvable. Le modèle Excel utilise `1.1`, `1.2`… : on peut l'afficher en plus. |
 | Date de la prochaine remise | À me donner : elle fixe la période du Sprint 2. |
 | Liste des membres | Nom complet, compte Plane, compte GitHub (le brouillon du Sprint 1 en donne une partie). |
 | Textes libres | Reprendre ceux du brouillon du Sprint 1 (résumé, schéma fonctionnel, plan alpha/bêta) dans `pld.yml`. |

@@ -61,6 +61,7 @@ Mis à jour le 2026-11-01.
 | 2026-10-31 | Traduction FR → EN par DeepL API Free ajoutée au workflow (original FR replié). Testée en local (8 cas, 0 échec). Pas encore installée. |
 | 2026-11-01 | Workflow avec traduction installé. Test réel réussi : `Frontend#48` et `Backend#34` en anglais, original FR, lien Plane, dans leurs projets. Fausse erreur « already exists in this project » (auto-add GitHub) corrigée dans le workflow. |
 | 2026-11-01 | Import ClickUp → Plane choisi (API, sprints = cycles). Script d'extraction en lecture seule écrit, testé face à un faux ClickUp (3 tests). Pas encore lancé sur le vrai ClickUp. |
+| 2026-11-02 | Extraction ClickUp réelle : 4 sprints (tâches parentes), 38 tâches. Table ClickUp → issues GitHub validée. Importeur écrit, 8 tests face à un faux Plane. Pas encore lancé sur Plane. |
 | 2026-10-31 | 1ʳᵉ sauvegarde Plane rapatriée (chiffrée). Test de restauration réussi : données identiques (2 utilisateurs, 1 projet, 7 tickets). Aucun fichier joint à ce moment-là. |
 
 ## Bugs corrigés en route

@@ -7,7 +7,7 @@ Plane Community n'a pas de page « Importations » : on passe par l'API.
 |---|---|
 | 1. Extraire ClickUp (lecture seule) | ✅ Faite le 2026-11-02 |
 | 2. Faire correspondre (cycles, statuts, issues GitHub) | ✅ Choix faits, table des issues à valider |
-| 3. Importer dans Plane | À faire |
+| 3. Importer dans Plane | Script prêt et testé en local, pas encore lancé |
 
 ## 1. Extraire ClickUp
 
@@ -98,11 +98,91 @@ La table tâche ClickUp → issue GitHub est dans `~/.config/projectos/pld.yml` 
 
 ## 4. Importer dans Plane
 
-À écrire : `pld/clickup_importer.py`.
+Script : `pld/clickup_importer.py`. Il crée 4 cycles, 38 tickets et les liens vers les issues GitHub existantes.
+Il ne crée **aucune** issue GitHub, n'assigne personne, ne modifie ni ne supprime rien dans Plane.
+
+| Mode | Commande | Effet |
+|---|---|---|
+| Plan | `--plan` | Hors ligne. Affiche ce qui sera importé. |
+| Essai à blanc | (aucune option) | Lit Plane (GET seulement) et dit ce qui serait créé |
+| Import | `--appliquer` | Refait l'essai, demande `oui`, puis crée |
+
+### 1. Préparer
+
+1. Dans `~/.config/projectos/pld.yml`, remplis `fin_cycle_en_cours` (fin du Sprint N°2), par ex. `"2026-11-13"`.
+2. Sauvegarde Plane ([sauvegardes.md](sauvegardes.md)) : obligatoire.
+3. Vérifie le plan :
+
+```bash
+cd ~/Desktop/Dev/ProjectOS
+python3 pld/clickup_importer.py --plan
+```
+
+**Attendu :** `Total : 4 cycles, 38 tickets, 33 liens GitHub.` et aucune ligne `✗`.
+
+### 2. Créer une clé API Plane
+
+1. Ouvre `https://plane.TON-DOMAINE/settings/profile/api-tokens/` (**Jetons d'accès personnel**).
+2. **Ajouter un jeton d'accès** → nom `Import ClickUp`, expiration courte → **Générer un jeton** → copie-le.
+
+Ne la colle que dans la commande ci-dessous. Supprime-la après l'import.
+
+### 3. Essai à blanc
+
+```bash
+read -rsp 'Clé API Plane : ' PLANE_API_KEY && export PLANE_API_KEY && echo
+python3 pld/clickup_importer.py
+```
+
+**Attendu :** `Projet Plane : « … » (…)`, la liste `Ticket à créer`, `Lien à créer`, `Cycle à créer`, puis `… action(s) à faire … (… requêtes, lecture seule)`.
+
+### 4. Essai dans un projet jetable
+
+1. Plane → **Créer un projet** → nom `Essai import`.
+2. Note son ID dans l'adresse (après `/projects/`).
+3. Active les cycles : `https://plane.TON-DOMAINE/flowly/settings/projects/ID-DU-PROJET/features` → **Cycles**.
+4. Lance l'import dans ce projet (remplace `ID-DU-PROJET`) :
+
+```bash
+python3 pld/clickup_importer.py --appliquer --projet ID-DU-PROJET
+```
+
+5. Tape `oui`. Compte 2 à 3 minutes (Plane limite à 60 requêtes par minute ; le script attend tout seul).
+6. Relance la même commande. **Attendu :** `Rien à faire : tout est déjà dans Plane.`
+7. Regarde le projet dans Plane : cycles, dates, tickets, liens GitHub.
+8. Supprime le projet : réglages du projet → **Supprimer le projet**.
+
+### 5. Import réel
+
+```bash
+python3 pld/clickup_importer.py --appliquer
+unset PLANE_API_KEY
+```
+
+**Attendu :** `Terminé : 38 ticket(s), 33 lien(s), 4 cycle(s) créés.` Aucune nouvelle issue dans GitHub.
+
+### En cas de problème
+
+| Message | Cause | Solution |
+|---|---|---|
+| `renseigne fin_cycle_en_cours` | Date de fin du Sprint N°2 absente | La mettre dans `pld.yml` |
+| `Accès refusé par Plane (401)` | Clé mal copiée ou supprimée | Recréer la clé, relancer |
+| `Introuvable (404)` | Espace ou ID de projet faux | Vérifier `plane:` dans `pld.yml` ou `--projet` |
+| `Les cycles sont désactivés` | Fonction Cycles coupée dans le projet | L'activer (étape 4.3) |
+| `Cycle « … » déjà terminé dans Plane` | Un import précédent s'est arrêté après les vraies dates | Supprimer ce cycle dans Plane, relancer |
+| Arrêt au milieu | Réseau, Plane | Relancer : rien n'est recréé |
+
+### Retour arrière
+
+Tous les tickets importés portent `Repris de ClickUp` dans leur description. Les supprimer à la main avec leurs cycles, ou restaurer la sauvegarde de l'étape 1.
+
+### Choix techniques
 
 | Sujet | Choix |
 |---|---|
 | Doublons dans Plane | ID ClickUp gardé dans le ticket (`external_source` = `clickup`) ; relancer l'import ne recrée rien |
 | Date de fin réelle | Gardée dans la description (« Terminé le : »), car Plane remplace `completed_at` par la date de l'import |
 | Cycles passés | Créés avec une fin future, tickets ajoutés, puis vraies dates (Plane refuse d'ajouter à un cycle terminé) |
-| Sécurité | Sauvegarde Plane avant, essai à blanc, puis essai dans un projet jetable |
+| État Plane | Premier état du groupe « terminé » ou « à faire » du projet |
+
+Tests (faux Plane local, sans réseau) : `python3 -m unittest discover -s pld/tests`, lancés aussi par `validate.sh`.

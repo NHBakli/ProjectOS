@@ -57,8 +57,9 @@ Sujet : **reprendre l'historique ClickUp dans Plane** (étape 0 du PLD). Guide :
 | Fait | Extraction réelle (`~/projectos-pld/clickup/clickup-20261102T200905Z.json`). Sprints = **tâches parentes** (Phase 2, Phase 3, Sprint 1, Sprint 2), 38 sous-tâches. Ni points ni estimations. |
 | Choix de l'utilisateur | 4 cycles Plane ; Sprint 2 = cycle **en cours** ; **pas d'assignés** ; tâches déjà en issue GitHub = lien ajouté, **jamais d'issue recréée** ; import sans étiquette d'équipe. |
 | ⚠️ Changement de cap | L'utilisateur dit que **les prochaines tâches seront créées directement dans GitHub** (plus dans Plane). Le PLD croisera Plane (historique) et les backlogs GitHub (qui a fait quoi, ce qui est fini). À répercuter dans `docs/plan-pld.md` : sens du workflow n8n, source de vérité, estimations. |
-| En attente de l'utilisateur | 1) Valider la table ClickUp → issues GitHub. 2) Date de fin du Sprint 2. 3) `backup.yml` avant l'import. 4) `git push`. |
-| À écrire ensuite | `pld/clickup_importer.py` (table dans `~/.config/projectos/pld.yml`), essai à blanc, essai dans un projet Plane jetable, puis import réel. |
+| Table validée | `~/.config/projectos/pld.yml` (hors Git) : 38 tâches, 31 issues GitHub citées (toutes vérifiées existantes), sections `plane:` et `clickup_import:`. |
+| Importeur | `pld/clickup_importer.py` : `--plan` (hors ligne), essai à blanc par défaut (GET seulement), `--appliquer` (confirmation `oui`), `--projet` pour un projet jetable. 8 tests face à un faux Plane. **Jamais lancé sur le vrai Plane.** |
+| En attente de l'utilisateur | 1) `fin_cycle_en_cours` dans `pld.yml`. 2) `backup.yml`. 3) Essai à blanc, essai dans un projet jetable, import réel (`docs/07-import-clickup.md` §4). 4) `git push`. |
 
 Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) :
 
@@ -98,7 +99,7 @@ Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) 
 | `kubernetes/` | Manifests cert-manager et smoke tests |
 | `scripts/generate-secrets.sh plane\|backup\|n8n` | Crée les secrets directement chiffrés (Vault), un seul mot de passe |
 | `n8n/workflows/` | Workflows n8n à importer (sans secret ni domaine) |
-| `pld/` | Générateur de PLD (en cours) : `clickup_extraire.py`, tests dans `pld/tests/` (lancés par `validate.sh`) |
+| `pld/` | Générateur de PLD (en cours) : `clickup_extraire.py`, `clickup_importer.py`, tests dans `pld/tests/` (lancés par `validate.sh`) |
 | `~/projectos-pld/` (hors Git) | Extractions ClickUp (contiennent noms et e-mails) |
 | `scripts/test-n8n-workflow.sh` | Teste un workflow dans un n8n local (Docker) face à de fausses API Plane/GitHub |
 | `~/.config/projectos/` (hors Git) | `hosts.yml`, `k3s-approval.yml`, `platform.yml`, `*.vault.yml` |

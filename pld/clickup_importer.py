@@ -108,16 +108,18 @@ def construire_plan(donnees, config, aujourd_hui):
             erreurs.append(f"Tâche parente {pid} absente de l'extraction")
             continue
         debut, fin = date_clickup(p.get("start_date")), date_clickup(p.get("due_date"))
-        en_cours = p["status"].get("type") != "closed"
-        if en_cours:
+        if p["status"].get("type") != "closed":  # sprint resté ouvert dans ClickUp : fin confirmée dans pld.yml
             if fin_en_cours:
                 fin = fin_en_cours
             elif not fin or fin < aujourd_hui:
-                erreurs.append(f"Cycle en cours « {p['name']} » : renseigne fin_cycle_en_cours dans pld.yml")
+                erreurs.append(f"« {p['name']} » est encore ouvert dans ClickUp : confirme sa date de fin "
+                                   f"(fin_cycle_en_cours dans pld.yml)")
         if not debut or not fin:
             erreurs.append(f"Cycle « {p['name']} » sans date de début ou de fin dans ClickUp")
         elif debut > fin:
             erreurs.append(f"Cycle « {p['name']} » : début {debut} après la fin {fin}")
+        # Encore ouvert dans ClickUp ne veut pas dire en cours : c'est la date de fin qui décide.
+        en_cours = bool(fin) and fin >= aujourd_hui
         cycles.append({"clickup_id": pid, "nom": p["name"], "debut": debut, "fin": fin, "en_cours": en_cours})
 
     ordre = {c["clickup_id"]: i for i, c in enumerate(cycles)}

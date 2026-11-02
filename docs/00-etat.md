@@ -34,7 +34,7 @@ Mis à jour le 2026-11-02.
 
 ## À faire de ton côté (en attente)
 
-1. **Importer ClickUp dans Plane** : date de fin du Sprint N°2 dans `pld.yml`, puis essai à blanc, projet jetable, import réel → [07-import-clickup.md](07-import-clickup.md), section 4.
+1. **Importer ClickUp dans Plane** : sauvegarde, essai à blanc, projet jetable, import réel → [07-import-clickup.md](07-import-clickup.md), section 4.
 2. Revoir le plan du PLD : les prochaines tâches seront créées directement dans GitHub.
 3. Lancer une sauvegarde (`backup.yml`) : le workflow, ses identifiants et la clé DeepL n'en ont encore aucune. Obligatoire avant l'import ClickUp.
 4. Supprimer les issues et tickets de test (`Frontend#47`, `Frontend#49`, `Backend#35`).

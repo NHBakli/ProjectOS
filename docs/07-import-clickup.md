@@ -83,7 +83,7 @@ Ni points, ni estimation de temps, ni champ personnalisé. Statuts : `to do`, `c
 | ClickUp | Plane |
 |---|---|
 | Tâche parente | Un **cycle**, avec ses dates. Les 4 sont repris. |
-| Sprint N°2 | Cycle **en cours** : nouvelle date de fin à fixer |
+| Sprint N°2 | Cycle **terminé** le 2026-10-23 (resté ouvert dans ClickUp, fin confirmée). Ses tâches restent « à faire », comme leurs issues GitHub. |
 | Sous-tâche | Un ticket dans le cycle |
 | `complete` / `to do` | État du groupe « terminé » / « à faire » |
 | Assignés | **Non repris.** Les prochaines tâches naissent dans GitHub : le PLD lira qui a fait quoi dans GitHub. |
@@ -109,7 +109,7 @@ Il ne crée **aucune** issue GitHub, n'assigne personne, ne modifie ni ne suppri
 
 ### 1. Préparer
 
-1. Dans `~/.config/projectos/pld.yml`, remplis `fin_cycle_en_cours` (fin du Sprint N°2), par ex. `"2026-11-13"`.
+1. Dans `~/.config/projectos/pld.yml`, `fin_cycle_en_cours` confirme la fin du Sprint N°2, resté ouvert dans ClickUp (fait : `"2026-10-23"`).
 2. Sauvegarde Plane ([sauvegardes.md](sauvegardes.md)) : obligatoire.
 3. Vérifie le plan :
 
@@ -165,7 +165,7 @@ unset PLANE_API_KEY
 
 | Message | Cause | Solution |
 |---|---|---|
-| `renseigne fin_cycle_en_cours` | Date de fin du Sprint N°2 absente | La mettre dans `pld.yml` |
+| `encore ouvert dans ClickUp : confirme sa date de fin` | Sprint resté ouvert dans ClickUp | Mettre sa vraie fin dans `fin_cycle_en_cours` (`pld.yml`) |
 | `Accès refusé par Plane (401)` | Clé mal copiée ou supprimée | Recréer la clé, relancer |
 | `Introuvable (404)` | Espace ou ID de projet faux | Vérifier `plane:` dans `pld.yml` ou `--projet` |
 | `Les cycles sont désactivés` | Fonction Cycles coupée dans le projet | L'activer (étape 4.3) |

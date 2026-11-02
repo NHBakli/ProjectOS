@@ -184,6 +184,12 @@ class TestPlan(unittest.TestCase):
         self.assertEqual((c["groupe"], c["debut"], c["termine_le"]), ("unstarted", None, None))
         self.assertTrue(any("à vérifier" in w for w in plan["avertissements"]))
 
+    def test_sprint_ouvert_dans_clickup_mais_fini(self):
+        plan = ci.construire_plan(EXTRACTION, dict(TABLE, fin_cycle_en_cours="2026-10-23"), AUJOURD_HUI)
+        self.assertEqual(plan["erreurs"], [])
+        s2 = plan["cycles"][1]
+        self.assertEqual((str(s2["fin"]), s2["en_cours"]), ("2026-10-23", False))
+
     def test_erreurs_de_table(self):
         table = {"taches": [{"clickup_id": "a", "issues": ["Front#5"]}, {"clickup_id": "S1"},
                             {"clickup_id": "zz"}, {"clickup_id": "c"}]}

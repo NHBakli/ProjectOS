@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 2026-11-01.
+Mis à jour le 2026-11-02.
 
 ## Le serveur
 
@@ -34,10 +34,10 @@ Mis à jour le 2026-11-01.
 
 ## À faire de ton côté (en attente)
 
-1. **Extraire ClickUp** et coller le résumé affiché (sans e-mail) → [07-import-clickup.md](07-import-clickup.md), section 1.
-2. Dire si les issues GitHub du Sprint 1 viennent des mêmes tâches ClickUp (pour éviter les doublons à l'import).
+1. **Importer ClickUp dans Plane** : date de fin du Sprint N°2 dans `pld.yml`, puis essai à blanc, projet jetable, import réel → [07-import-clickup.md](07-import-clickup.md), section 4.
+2. Revoir le plan du PLD : les prochaines tâches seront créées directement dans GitHub.
 3. Lancer une sauvegarde (`backup.yml`) : le workflow, ses identifiants et la clé DeepL n'en ont encore aucune. Obligatoire avant l'import ClickUp.
-4. Supprimer les issues et tickets de test (`Frontend#47`, `#48`, `Backend#34`).
+4. Supprimer les issues et tickets de test (`Frontend#47`, `Frontend#49`, `Backend#35`).
 5. Noter les dates d'expiration du token GitHub et de la clé Plane (90 jours si le réglage proposé a été suivi).
 6. Pour le PLD : date de la prochaine remise, liste des membres (nom, compte Plane, compte GitHub) → [plan-pld.md](plan-pld.md).
 7. `git push` des derniers commits.

@@ -5,8 +5,8 @@ Plane Community n'a pas de page « Importations » : on passe par l'API.
 
 | Étape | État |
 |---|---|
-| 1. Extraire ClickUp (lecture seule) | ✅ Script prêt : `pld/clickup_extraire.py` |
-| 2. Faire correspondre statuts, membres, tags | À faire, d'après le résumé de l'étape 1 |
+| 1. Extraire ClickUp (lecture seule) | ✅ Faite le 2026-11-02 |
+| 2. Faire correspondre (cycles, statuts, issues GitHub) | ✅ Choix faits, table des issues à valider |
 | 3. Importer dans Plane | À faire |
 
 ## 1. Extraire ClickUp
@@ -65,14 +65,44 @@ Le résumé affiché ne contient pas d'e-mail : tu peux le coller pour préparer
 
 Le token donne un accès complet à ton compte. Une fois l'import fini : **Settings** → **Apps** → **Regenerate**, pour invalider l'ancien.
 
-## 2 et 3. Correspondances et import
+## 2. Ce que contient ClickUp (extraction du 2026-11-02)
 
-Prévu, pas encore écrit. Principes retenus :
+Une seule liste. Les sprints sont des **tâches parentes**, les vraies tâches sont leurs sous-tâches.
+
+| Tâche parente ClickUp | Dates | Sous-tâches |
+|---|---|---|
+| Phase N°2 | 2026-02-02 → 2026-03-30 | 10, terminées |
+| Phase N°3 | 2026-03-30 → 2026-04-20 | 4, terminées |
+| Sprint N°1 | 2026-09-15 → 2026-10-02 | 11, terminées |
+| Sprint N°2 | 2026-10-02 → 2026-10-23 | 13, dont 12 à faire |
+
+Ni points, ni estimation de temps, ni champ personnalisé. Statuts : `to do`, `complete`.
+
+## 3. Correspondances (choix du 2026-11-02)
+
+| ClickUp | Plane |
+|---|---|
+| Tâche parente | Un **cycle**, avec ses dates. Les 4 sont repris. |
+| Sprint N°2 | Cycle **en cours** : nouvelle date de fin à fixer |
+| Sous-tâche | Un ticket dans le cycle |
+| `complete` / `to do` | État du groupe « terminé » / « à faire » |
+| Assignés | **Non repris.** Les prochaines tâches naissent dans GitHub : le PLD lira qui a fait quoi dans GitHub. |
+| Tâche déjà en issue GitHub | Lien vers l'issue ajouté au ticket. **Aucune issue recréée.** |
+
+### Pas de doublon dans GitHub
+
+1. Les tickets importés n'ont **pas d'étiquette d'équipe** : le workflow n8n ne se déclenche pas.
+2. Ils portent le lien de leur issue GitHub, au même format que n8n. Si quelqu'un ajoute une étiquette plus tard, n8n voit le lien et ne crée rien.
+
+La table tâche ClickUp → issue GitHub est dans `~/.config/projectos/pld.yml` (hors Git), validée à la main.
+
+## 4. Importer dans Plane
+
+À écrire : `pld/clickup_importer.py`.
 
 | Sujet | Choix |
 |---|---|
-| Sprints ClickUp | Un **cycle Plane** par sprint, avec ses vraies dates |
-| Doublons | ID ClickUp gardé dans le ticket (`external_source` = `clickup`) ; relancer l'import ne recrée rien |
+| Doublons dans Plane | ID ClickUp gardé dans le ticket (`external_source` = `clickup`) ; relancer l'import ne recrée rien |
 | Date de fin réelle | Gardée dans la description (« Terminé le : »), car Plane remplace `completed_at` par la date de l'import |
-| Issues GitHub | L'import ne doit pas déclencher le workflow n8n Plane → GitHub |
+| Cycles passés | Créés avec une fin future, tickets ajoutés, puis vraies dates (Plane refuse d'ajouter à un cycle terminé) |
 | Sécurité | Sauvegarde Plane avant, essai à blanc, puis essai dans un projet jetable |

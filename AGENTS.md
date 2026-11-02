@@ -48,17 +48,17 @@ Workflow Plane → GitHub (`docs/06-plane-github.md`) : label Plane `frontend`/`
 
 Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
 
-## Reprise en cours (2026-11-01, avant un reboot)
+## Reprise en cours (2026-11-02)
 
 Sujet : **reprendre l'historique ClickUp dans Plane** (étape 0 du PLD). Guide : `docs/07-import-clickup.md`.
 
 | | |
 |---|---|
-| Choix de l'utilisateur | Extraction par l'**API ClickUp** (token personnel saisi en masqué, jamais collé). Anciennes sprints = **cycles Plane** avec leurs vraies dates. |
-| Fait | `pld/clickup_extraire.py` (GET seulement, JSON dans `~/projectos-pld/clickup/`, droits 600, résumé sans e-mail). 3 tests dans `pld/tests/`, lancés par `validate.sh`. Commit `97b9721`. |
-| Pas fait | Aucune extraction réelle lancée. Libellés ClickUp vérifiés (doc développeur ClickUp) : avatar → Settings → Apps → API Token, ou `app.clickup.com/settings/apps`. |
-| En attente de l'utilisateur | 1) Le **résumé** de l'extraction. 2) Les issues GitHub du Sprint 1 viennent-elles des mêmes tâches ClickUp ? 3) Une sauvegarde Plane (`backup.yml`) avant tout import. |
-| À écrire ensuite | `pld/clickup_importer.py` : correspondances dans `~/.config/projectos/pld.yml` (statut ClickUp → état Plane, membre → compte Plane, tag → étiquette, points → estimation), essai à blanc, essai dans un projet Plane jetable, puis import réel. |
+| Fait | Extraction réelle (`~/projectos-pld/clickup/clickup-20261102T200905Z.json`). Sprints = **tâches parentes** (Phase 2, Phase 3, Sprint 1, Sprint 2), 38 sous-tâches. Ni points ni estimations. |
+| Choix de l'utilisateur | 4 cycles Plane ; Sprint 2 = cycle **en cours** ; **pas d'assignés** ; tâches déjà en issue GitHub = lien ajouté, **jamais d'issue recréée** ; import sans étiquette d'équipe. |
+| ⚠️ Changement de cap | L'utilisateur dit que **les prochaines tâches seront créées directement dans GitHub** (plus dans Plane). Le PLD croisera Plane (historique) et les backlogs GitHub (qui a fait quoi, ce qui est fini). À répercuter dans `docs/plan-pld.md` : sens du workflow n8n, source de vérité, estimations. |
+| En attente de l'utilisateur | 1) Valider la table ClickUp → issues GitHub. 2) Date de fin du Sprint 2. 3) `backup.yml` avant l'import. 4) `git push`. |
+| À écrire ensuite | `pld/clickup_importer.py` (table dans `~/.config/projectos/pld.yml`), essai à blanc, essai dans un projet Plane jetable, puis import réel. |
 
 Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) :
 

@@ -101,7 +101,7 @@ def construire_plan(donnees, config, aujourd_hui):
     if fin_en_cours:
         fin_en_cours = dt.date.fromisoformat(str(fin_en_cours))
 
-    cycles = []
+    cycles, parents_tickets = [], []
     for pid in sorted(parents, key=lambda i: int(taches[i].get("start_date") or 0) if i in taches else 0):
         p = taches.get(pid)
         if not p:
@@ -121,8 +121,18 @@ def construire_plan(donnees, config, aujourd_hui):
         # Encore ouvert dans ClickUp ne veut pas dire en cours : c'est la date de fin qui décide.
         en_cours = bool(fin) and fin >= aujourd_hui
         cycles.append({"clickup_id": pid, "nom": p["name"], "debut": debut, "fin": fin, "en_cours": en_cours})
+        # La tâche parente devient aussi un ticket parent (comme dans ClickUp), hors cycle.
+        ferme = p["status"].get("type") == "closed"
+        termine_le = date_clickup(p.get("date_done") or p.get("date_closed")) if ferme else None
+        parents_tickets.append({
+            "clickup_id": pid, "titre": p["name"].strip(), "cycle": None, "parent": None,
+            "groupe": "completed" if ferme else "unstarted", "debut": debut, "fin": fin,
+            "termine_le": termine_le,
+            "priorite": PRIORITES.get(((p.get("priority") or {}).get("priority") or "").lower(), "none"),
+            "description_html": description_html(p, termine_le), "liens": []})
 
     ordre = {c["clickup_id"]: i for i, c in enumerate(cycles)}
+    par_id = {c["clickup_id"]: c for c in cycles}
     tickets = []
     for t in sorted(a_importer, key=lambda t: (ordre.get(racine(t), len(ordre)), float(t.get("orderindex") or 0))):
         entree = table.get(t["id"], {})
@@ -137,13 +147,19 @@ def construire_plan(donnees, config, aujourd_hui):
         ferme = t["status"].get("type") == "closed"
         termine_le = date_clickup(t.get("date_done") or t.get("date_closed")) if ferme else None
         debut, fin = date_clickup(t.get("start_date")), date_clickup(t.get("due_date"))
+        cycle = par_id.get(racine(t))
         if debut and fin and debut > fin:
             avert.append(f"« {t['name']} » : début après l'échéance, début ignoré")
+        elif cycle:
+            # Sans date propre : celles du sprint, pour placer le ticket dans le temps.
+            debut, fin = debut or cycle["debut"], fin or cycle["fin"]
+        if debut and fin and debut > fin:
             debut = None
         tickets.append({
             "clickup_id": t["id"],
             "titre": t["name"].strip(),
             "cycle": racine(t),
+            "parent": racine(t),
             "groupe": "completed" if ferme else "unstarted",
             "debut": debut,
             "fin": fin,
@@ -152,24 +168,27 @@ def construire_plan(donnees, config, aujourd_hui):
             "description_html": description_html(t, termine_le),
             "liens": liens,
         })
-    return {"cycles": cycles, "tickets": tickets, "erreurs": erreurs, "avertissements": avert}
+    return {"cycles": cycles, "parents": parents_tickets, "tickets": tickets,
+            "erreurs": erreurs, "avertissements": avert}
 
 
 def afficher_plan(plan):
     noms = {c["clickup_id"]: c for c in plan["cycles"]}
-    print("Cycles :")
+    print("Phases et sprints (ticket parent + cycle) :")
     for c in plan["cycles"]:
         n = sum(1 for t in plan["tickets"] if t["cycle"] == c["clickup_id"])
         etat = "en cours" if c["en_cours"] else "terminé"
-        print(f"  {c['nom']} : {c['debut']} → {c['fin']} ({etat}), {n} tickets")
-    print("\nTickets (état, titre, issues GitHub reliées) :")
+        print(f"  {c['nom']} : {c['debut']} → {c['fin']} ({etat}), {n} sous-tickets")
+    print("\nSous-tickets (sprint, état, dates, titre, issues GitHub reliées) :")
     for t in plan["tickets"]:
         c = noms.get(t["cycle"], {}).get("nom", "sans cycle")
         refs = ", ".join(l["title"].split("/", 1)[1] for l in t["liens"]) or "—"
         etat = "terminé" if t["groupe"] == "completed" else "à faire"
-        print(f"  [{c}] {etat:8} {t['titre'][:60]:60} {refs}")
+        dates = f"{t['debut'] or '…'} → {t['fin'] or '…'}"
+        print(f"  [{c}] {etat:8} {dates:25} {t['titre'][:50]:50} {refs}")
     n_liens = sum(len(t["liens"]) for t in plan["tickets"])
-    print(f"\nTotal : {len(plan['cycles'])} cycles, {len(plan['tickets'])} tickets, {n_liens} liens GitHub.")
+    print(f"\nTotal : {len(plan['cycles'])} cycles, {len(plan['parents'])} tickets parents, "
+          f"{len(plan['tickets'])} sous-tickets, {n_liens} liens GitHub.")
     for a in plan["avertissements"]:
         print(f"  ⚠ {a}")
 
@@ -251,7 +270,8 @@ def executer(plane, plan, aujourd_hui, journal=print):
     """Crée ce qui manque. En essai à blanc (plane.ecrire = False), ne fait que des GET."""
     ecrire = plane.ecrire
     verbe = "créé" if ecrire else "à créer"
-    bilan = {"tickets_crees": 0, "tickets_presents": 0, "liens_crees": 0, "cycles_crees": 0, "actions": 0}
+    bilan = {"tickets_crees": 0, "tickets_presents": 0, "tickets_completes": 0, "liens_crees": 0,
+             "cycles_crees": 0, "actions": 0}
 
     projet = plane.requete("GET", "/")[1] or {}
     journal(f"Projet Plane : « {projet.get('name', '?')} » ({projet.get('identifier', '?')})")
@@ -263,20 +283,36 @@ def executer(plane, plan, aujourd_hui, journal=print):
     etats = {}
     for e in sorted(plane.liste("/states/"), key=lambda e: e.get("sequence") or 0):
         etats.setdefault(e["group"], e["id"])
-    for groupe in {t["groupe"] for t in plan["tickets"]}:
+    for groupe in {t["groupe"] for t in plan["parents"] + plan["tickets"]}:
         if groupe not in etats:
             raise ErreurImport(f"Aucun état du groupe « {groupe} » dans le projet Plane")
 
     existants = {i["external_id"]: i for i in plane.liste("/work-items/") if i.get("external_source") == SOURCE}
     cycles_existants = {c["external_id"]: c for c in plane.liste("/cycles/") if c.get("external_source") == SOURCE}
 
-    # 1. Tickets et liens
+    # 1. Tickets parents (phases, sprints), puis sous-tickets et liens
     ids = {}
-    for t in plan["tickets"]:
+    for t in plan["parents"] + plan["tickets"]:
+        parent_id = ids.get(t["parent"]) if t["parent"] else None
+        voulu = {"parent": parent_id,
+                 "start_date": t["debut"].isoformat() if t["debut"] else None,
+                 "target_date": t["fin"].isoformat() if t["fin"] else None}
         present = existants.get(t["clickup_id"])
         if present:
             ids[t["clickup_id"]] = present["id"]
             bilan["tickets_presents"] += 1
+            # Import déjà fait : on complète ce qui manque (parent, dates), sans rien remplacer.
+            manque = {k: v for k, v in voulu.items() if v and not present.get(k)}
+            noms = [{"parent": "parent", "start_date": "début", "target_date": "fin"}[k] for k in manque]
+            if t["parent"] and not parent_id and not present.get("parent"):
+                noms.insert(0, "parent")  # essai à blanc : le ticket parent n'existe pas encore
+            if noms:
+                bilan["actions"] += 1
+                if ecrire and manque:
+                    plane.requete("PATCH", f"/work-items/{present['id']}/", manque)
+                    bilan["tickets_completes"] += 1
+                quoi = ", ".join(noms)
+                journal(f"  Ticket {'complété' if ecrire else 'à compléter'} ({quoi}) : {t['titre'][:60]}")
         else:
             bilan["actions"] += 1
             if ecrire:
@@ -288,17 +324,15 @@ def executer(plane, plan, aujourd_hui, journal=print):
                     "external_source": SOURCE,
                     "external_id": t["clickup_id"],
                 }
-                if t["debut"]:
-                    corps["start_date"] = t["debut"].isoformat()
-                if t["fin"]:
-                    corps["target_date"] = t["fin"].isoformat()
+                corps.update({k: v for k, v in voulu.items() if v})
                 code, rep = plane.requete("POST", "/work-items/", corps)
                 ids[t["clickup_id"]] = rep["id"]
                 if code == 409:
                     bilan["tickets_presents"] += 1
                 else:
                     bilan["tickets_crees"] += 1
-            journal(f"  Ticket {verbe} : {t['titre'][:70]}")
+            genre = "Ticket parent" if t in plan["parents"] else "Ticket"
+            journal(f"  {genre} {verbe} : {t['titre'][:70]}")
         if not t["liens"]:
             continue
         deja = set()
@@ -456,7 +490,8 @@ def main(argv=None, aujourd_hui=None):
         print(f"Échec : {e}\nRelancer la même commande reprend là où l'import s'est arrêté.", file=sys.stderr)
         return 1
     print(f"\nTerminé : {bilan['tickets_crees']} ticket(s), {bilan['liens_crees']} lien(s), "
-          f"{bilan['cycles_crees']} cycle(s) créés. ({plane.appels} requêtes)")
+          f"{bilan['cycles_crees']} cycle(s) créés, {bilan['tickets_completes']} ticket(s) complétés. "
+          f"({plane.appels} requêtes)")
     return 0
 
 

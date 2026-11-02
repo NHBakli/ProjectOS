@@ -116,6 +116,10 @@ class FauxPlane(BaseHTTPRequestHandler):
             t = dict(corps, id=str(uuid.uuid4()))
             T[t["id"]] = t
             return self._send(201, t)
+        m = re.fullmatch(r"/work-items/([^/]+)/", r)
+        if m and methode == "PATCH":
+            T[m.group(1)].update(corps)
+            return self._send(200, T[m.group(1)])
         m = re.fullmatch(r"/work-items/([^/]+)/links/", r)
         if m:
             liens = FauxPlane.liens.setdefault(m.group(1), [])
@@ -175,6 +179,9 @@ class TestPlan(unittest.TestCase):
                          [("Sprint N°1", "2026-09-15", "2026-10-02", False),
                           ("Sprint N°2", "2026-10-02", "2026-11-13", True)])
         a, b, c = plan["tickets"]
+        self.assertEqual([(p["titre"], p["groupe"], p["parent"], p["cycle"]) for p in plan["parents"]],
+                         [("Sprint N°1", "completed", None, None), ("Sprint N°2", "unstarted", None, None)])
+        self.assertEqual((a["parent"], str(a["debut"]), str(a["fin"])), ("S1", "2026-09-15", "2026-10-02"))
         self.assertEqual((a["groupe"], a["priorite"], str(a["termine_le"])), ("completed", "urgent", "2026-10-05"))
         self.assertIn("Terminé le : 2026-10-05", a["description_html"])
         self.assertIn("Tags ClickUp : inchangeable", a["description_html"])
@@ -244,7 +251,7 @@ class TestImport(unittest.TestCase):
     def test_plan_hors_ligne_sans_requete(self):
         code, out, _ = self.lancer("--plan")
         self.assertEqual(code, 0)
-        self.assertIn("2 cycles, 3 tickets, 3 liens GitHub", out)
+        self.assertIn("2 cycles, 2 tickets parents, 3 sous-tickets, 3 liens GitHub", out)
         self.assertEqual(FauxPlane.appels, [])
 
     def test_essai_a_blanc_lecture_seule(self):
@@ -258,7 +265,7 @@ class TestImport(unittest.TestCase):
     def test_import_puis_relance_idempotente(self):
         code, out, err = self.lancer("--appliquer", "--oui")
         self.assertEqual(code, 0, err)
-        self.assertIn("3 ticket(s), 3 lien(s), 2 cycle(s) créés", out)
+        self.assertIn("5 ticket(s), 3 lien(s), 2 cycle(s) créés", out)
 
         tickets = {t["external_id"]: t for t in FauxPlane.tickets.values()}
         for t in tickets.values():
@@ -266,6 +273,10 @@ class TestImport(unittest.TestCase):
             self.assertNotIn("labels", t)       # pas d'étiquette d'équipe : n8n ne crée rien
             self.assertNotIn("assignees", t)
         self.assertEqual(tickets["a"]["state"], "e-done")   # 1er état du groupe terminé
+        self.assertEqual(tickets["a"]["parent"], tickets["S1"]["id"])
+        self.assertEqual(tickets["c"]["parent"], tickets["S2"]["id"])
+        self.assertNotIn("parent", tickets["S1"])
+        self.assertEqual((tickets["a"]["start_date"], tickets["a"]["target_date"]), ("2026-09-15", "2026-10-02"))
         self.assertEqual(tickets["c"]["state"], "e-todo")
         self.assertEqual(tickets["c"].get("target_date"), "2026-10-01")
         self.assertNotIn("start_date", tickets["c"])
@@ -288,6 +299,43 @@ class TestImport(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("Rien à faire", out)
         self.assertEqual({m for m, _, _ in FauxPlane.appels}, {"GET"})
+
+    def test_complete_un_ancien_import(self):
+        """Projet importé par l'ancienne version : sans tickets parents ni dates héritées."""
+        cycles = {"S1": ("2026-09-15", "2026-10-02"), "S2": ("2026-10-02", "2026-10-23")}
+        anciens = {"a": "S1", "b": "S1", "c": "S2"}
+        for cid, (d, f) in cycles.items():
+            FauxPlane.cycles[cid + "-id"] = {"id": cid + "-id", "name": cid, "external_source": "clickup",
+                                             "external_id": cid, "start_date": d + "T00:00:00Z",
+                                             "end_date": f + "T00:00:00Z"}
+        for ext, cyc in anciens.items():
+            FauxPlane.tickets[ext + "-id"] = {"id": ext + "-id", "external_source": "clickup", "external_id": ext,
+                                              "parent": None, "start_date": None, "target_date": None}
+            FauxPlane.membres.setdefault(cyc + "-id", []).append(ext + "-id")
+        FauxPlane.tickets["c-id"]["target_date"] = "2026-10-20"  # modifié à la main : à garder
+        for l in ({"url": "https://github.com/Flowly-PBS/Frontend/issues/5"},
+                  {"url": "https://github.com/Flowly-PBS/Backend/issues/4"},
+                  {"url": "https://github.com/Flowly-PBS/Backend/issues/5"}):
+            FauxPlane.liens.setdefault("a-id" if "Frontend" in l["url"] else "b-id", []).append(l)
+        code, out, err = self.lancer("--appliquer", "--oui", "--config", str(self.config_ancienne()))
+        self.assertEqual(code, 0, err)
+        self.assertIn("2 ticket(s), 0 lien(s), 0 cycle(s) créés, 3 ticket(s) complétés", out)
+        t = FauxPlane.tickets
+        parents = {x["external_id"]: x["id"] for x in t.values() if x["external_id"] in cycles}
+        self.assertEqual(t["a-id"]["parent"], parents["S1"])
+        self.assertEqual((t["a-id"]["start_date"], t["a-id"]["target_date"]), ("2026-09-15", "2026-10-02"))
+        self.assertEqual(t["c-id"]["target_date"], "2026-10-20")  # rien n'est remplacé
+        self.assertFalse(any(m == "PATCH" and "/cycles/" in p for m, p, _ in FauxPlane.appels))
+        FauxPlane.appels.clear()
+        code, out, _ = self.lancer("--appliquer", "--oui", "--config", str(self.config_ancienne()))
+        self.assertIn("Rien à faire", out)
+
+    def config_ancienne(self):
+        cfg = ci.yaml.safe_load(self.config.read_text())
+        cfg["clickup_import"]["fin_cycle_en_cours"] = "2026-10-23"
+        chemin = self.config.with_name("ancienne.yml")
+        chemin.write_text(ci.yaml.safe_dump(cfg, allow_unicode=True))
+        return chemin
 
     def test_cycle_deja_termine_incomplet(self):
         FauxPlane.cycles["x"] = {"id": "x", "name": "Sprint N°1", "external_source": "clickup",

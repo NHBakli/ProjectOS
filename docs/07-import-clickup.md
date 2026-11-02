@@ -82,9 +82,9 @@ Ni points, ni estimation de temps, ni champ personnalisé. Statuts : `to do`, `c
 
 | ClickUp | Plane |
 |---|---|
-| Tâche parente | Un **cycle**, avec ses dates. Les 4 sont repris. |
+| Tâche parente (phase, sprint) | Un **ticket parent** avec ses sous-tickets, comme dans ClickUp, **et** un **cycle** aux mêmes dates (pour le PLD). Le ticket parent n'est pas dans le cycle. |
 | Sprint N°2 | Cycle **terminé** le 2026-10-23 (resté ouvert dans ClickUp, fin confirmée). Ses tâches restent « à faire », comme leurs issues GitHub. |
-| Sous-tâche | Un ticket dans le cycle |
+| Sous-tâche | Un sous-ticket du ticket parent, dans le cycle. Sans date dans ClickUp : il prend les dates du sprint. |
 | `complete` / `to do` | État du groupe « terminé » / « à faire » |
 | Assignés | **Non repris.** Les prochaines tâches naissent dans GitHub : le PLD lira qui a fait quoi dans GitHub. |
 | Tâche déjà en issue GitHub | Lien vers l'issue ajouté au ticket. **Aucune issue recréée.** |
@@ -98,7 +98,7 @@ La table tâche ClickUp → issue GitHub est dans `~/.config/projectos/pld.yml` 
 
 ## 4. Importer dans Plane
 
-Script : `pld/clickup_importer.py`. Il crée 4 cycles, 38 tickets et les liens vers les issues GitHub existantes.
+Script : `pld/clickup_importer.py`. Il crée 4 tickets parents, 38 sous-tickets, 4 cycles et les liens vers les issues GitHub existantes.
 Il ne crée **aucune** issue GitHub, n'assigne personne, ne modifie ni ne supprime rien dans Plane.
 
 | Mode | Commande | Effet |
@@ -118,7 +118,7 @@ cd ~/Desktop/Dev/ProjectOS
 python3 pld/clickup_importer.py --plan
 ```
 
-**Attendu :** `Total : 4 cycles, 38 tickets, 33 liens GitHub.` et aucune ligne `✗`.
+**Attendu :** `Total : 4 cycles, 4 tickets parents, 38 sous-tickets, 33 liens GitHub.` et aucune ligne `✗`.
 
 ### 2. Créer une clé API Plane
 
@@ -134,7 +134,7 @@ read -rsp 'Clé API Plane : ' PLANE_API_KEY && export PLANE_API_KEY && echo
 python3 pld/clickup_importer.py
 ```
 
-**Attendu :** `Projet Plane : « … » (…)`, la liste `Ticket à créer`, `Lien à créer`, `Cycle à créer`, puis `… action(s) à faire … (… requêtes, lecture seule)`.
+**Attendu :** `Projet Plane : « … » (…)`, la liste `Ticket parent à créer`, `Ticket à créer`, `Lien à créer`, `Cycle à créer`, puis `… action(s) à faire … (… requêtes, lecture seule)`.
 
 ### 4. Essai dans un projet jetable
 
@@ -149,7 +149,7 @@ python3 pld/clickup_importer.py --appliquer --projet ID-DU-PROJET
 
 5. Tape `oui`. Compte 2 à 3 minutes (Plane limite à 60 requêtes par minute ; le script attend tout seul).
 6. Relance la même commande. **Attendu :** `Rien à faire : tout est déjà dans Plane.`
-7. Regarde le projet dans Plane : cycles, dates, tickets, liens GitHub.
+7. Regarde le projet dans Plane : tickets parents et sous-tickets, cycles, liens GitHub. Pour voir le temps : **Disposition en calendrier** ou **Disposition en chronologie** (le **Tableau** kanban n'affiche pas de dates).
 8. Supprime le projet : réglages du projet → **Supprimer le projet**.
 
 ### 5. Import réel
@@ -159,7 +159,7 @@ python3 pld/clickup_importer.py --appliquer
 unset PLANE_API_KEY
 ```
 
-**Attendu :** `Terminé : 38 ticket(s), 33 lien(s), 4 cycle(s) créés.` Aucune nouvelle issue dans GitHub.
+**Attendu :** `Terminé : 42 ticket(s), 33 lien(s), 4 cycle(s) créés, 0 ticket(s) complétés.` Aucune nouvelle issue dans GitHub.
 
 ### En cas de problème
 
@@ -171,6 +171,7 @@ unset PLANE_API_KEY
 | `Les cycles sont désactivés` | Fonction Cycles coupée dans le projet | L'activer (étape 4.3) |
 | `Cycle « … » déjà terminé dans Plane` | Un import précédent s'est arrêté après les vraies dates | Supprimer ce cycle dans Plane, relancer |
 | Arrêt au milieu | Réseau, Plane | Relancer : rien n'est recréé |
+| `Ticket à compléter (parent, début, fin)` | Projet importé par une version précédente du script | Normal : la relance ajoute le parent et les dates **vides**, sans rien remplacer |
 
 ### Retour arrière
 
@@ -184,5 +185,6 @@ Tous les tickets importés portent `Repris de ClickUp` dans leur description. Le
 | Date de fin réelle | Gardée dans la description (« Terminé le : »), car Plane remplace `completed_at` par la date de l'import |
 | Cycles passés | Créés avec une fin future, tickets ajoutés, puis vraies dates (Plane refuse d'ajouter à un cycle terminé) |
 | État Plane | Premier état du groupe « terminé » ou « à faire » du projet |
+| Relance | Crée ce qui manque ; sur un ticket déjà importé, remplit seulement le parent et les dates vides |
 
 Tests (faux Plane local, sans réseau) : `python3 -m unittest discover -s pld/tests`, lancés aussi par `validate.sh`.

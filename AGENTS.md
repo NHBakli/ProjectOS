@@ -56,7 +56,7 @@ Sujet : **reprendre l'historique ClickUp dans Plane** (étape 0 du PLD). Guide :
 |---|---|
 | Choix de l'utilisateur | Extraction par l'**API ClickUp** (token personnel saisi en masqué, jamais collé). Anciennes sprints = **cycles Plane** avec leurs vraies dates. |
 | Fait | `pld/clickup_extraire.py` (GET seulement, JSON dans `~/projectos-pld/clickup/`, droits 600, résumé sans e-mail). 3 tests dans `pld/tests/`, lancés par `validate.sh`. Commit `97b9721`. |
-| Pas fait | Aucune extraction réelle lancée. Libellés de l'interface ClickUp (Settings → Apps → API Token) non vérifiés dans une source. |
+| Pas fait | Aucune extraction réelle lancée. Libellés ClickUp vérifiés (doc développeur ClickUp) : avatar → Settings → Apps → API Token, ou `app.clickup.com/settings/apps`. |
 | En attente de l'utilisateur | 1) Le **résumé** de l'extraction. 2) Les issues GitHub du Sprint 1 viennent-elles des mêmes tâches ClickUp ? 3) Une sauvegarde Plane (`backup.yml`) avant tout import. |
 | À écrire ensuite | `pld/clickup_importer.py` : correspondances dans `~/.config/projectos/pld.yml` (statut ClickUp → état Plane, membre → compte Plane, tag → étiquette, points → estimation), essai à blanc, essai dans un projet Plane jetable, puis import réel. |
 

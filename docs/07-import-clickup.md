@@ -15,9 +15,16 @@ Le script ne fait que lire. Il n'envoie rien à ClickUp ni ailleurs.
 
 ### Créer un token ClickUp
 
+Accès direct, une fois connecté : `https://app.clickup.com/settings/apps`.
+
+Ou bien :
+
 1. Dans ClickUp, clique sur ton avatar (en haut à droite) → **Settings**.
 2. Menu de gauche : **Apps**.
-3. Bloc **API Token** : **Generate**, puis **Copy**.
+3. Bloc **API Token** : **Generate** (ou **Regenerate** s'il existe déjà), puis **Copy**.
+
+Le token commence par `pk_`. Il n'expire pas : pense à le régénérer après l'import (voir plus bas).
+Source : documentation ClickUp, `developer.clickup.com/docs/authentication`.
 
 Ne colle ce token nulle part ailleurs que dans la commande ci-dessous.
 

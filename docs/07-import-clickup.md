@@ -6,8 +6,8 @@ Plane Community n'a pas de page « Importations » : on passe par l'API.
 | Étape | État |
 |---|---|
 | 1. Extraire ClickUp (lecture seule) | ✅ Faite le 2026-11-02 |
-| 2. Faire correspondre (cycles, statuts, issues GitHub) | ✅ Choix faits, table des issues à valider |
-| 3. Importer dans Plane | Script prêt et testé en local, pas encore lancé |
+| 2. Faire correspondre (cycles, statuts, issues GitHub) | ✅ Choix faits, table validée |
+| 3. Importer dans Plane | Essai dans un projet jetable validé (2026-11-03), import réel à faire |
 
 ## 1. Extraire ClickUp
 

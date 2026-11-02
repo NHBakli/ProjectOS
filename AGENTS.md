@@ -59,8 +59,8 @@ Sujet : **reprendre l'historique ClickUp dans Plane** (étape 0 du PLD). Guide :
 | ⚠️ Changement de cap | L'utilisateur dit que **les prochaines tâches seront créées directement dans GitHub** (plus dans Plane). Le PLD croisera Plane (historique) et les backlogs GitHub (qui a fait quoi, ce qui est fini). À répercuter dans `docs/plan-pld.md` : sens du workflow n8n, source de vérité, estimations. |
 | Table validée | `~/.config/projectos/pld.yml` (hors Git) : 38 tâches, 31 issues GitHub citées (toutes vérifiées existantes), sections `plane:` et `clickup_import:`. |
 | Importeur | `pld/clickup_importer.py` : `--plan` (hors ligne), essai à blanc par défaut (GET seulement), `--appliquer` (confirmation `oui`), `--projet` pour un projet jetable. Tests face à un faux Plane. |
-| Essai 2026-11-02 | Projet jetable `test` (`0e5fe1d2-…`) : import OK (38 tickets, 33 liens, 4 cycles, 121 requêtes). Retour de l'utilisateur : il veut les **tickets parents** (phases, sprints) comme ClickUp, et des **dates** sur les tâches. Ajouté : ticket parent + cycle, dates du sprint héritées, relance qui complète parent/dates vides sans rien remplacer. À relancer sur `test`. Projet Flowly réel : **pas encore importé**. |
-| En attente de l'utilisateur | 1) ~~`fin_cycle_en_cours`~~ fait. 2) `backup.yml`. 3) Essai à blanc, essai dans un projet jetable, import réel (`docs/07-import-clickup.md` §4). 4) `git push`. |
+| Essai 2026-11-02 | Projet jetable `test` (`0e5fe1d2-…`) : import OK (38 tickets, 33 liens, 4 cycles, 121 requêtes). Retour de l'utilisateur : il veut les **tickets parents** (phases, sprints) comme ClickUp, et des **dates** sur les tâches. Ajouté : ticket parent + cycle, dates du sprint héritées, relance qui complète parent/dates vides sans rien remplacer. Relance sur `test` validée par l'utilisateur le 2026-11-03. Projet Flowly réel : **pas encore importé**. |
+| En attente de l'utilisateur | 1) Supprimer le projet `test`. 2) Import réel (`docs/07-import-clickup.md` §4.5). 3) Supprimer la clé Plane « Import ClickUp », régénérer le token ClickUp. 4) `git push`. |
 
 Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) :
 

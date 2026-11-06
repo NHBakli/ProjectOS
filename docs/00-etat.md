@@ -28,20 +28,19 @@ Mis à jour le 2026-11-06.
 
 ## Ce qui reste
 
-1. Générer le PLD depuis Plane et GitHub : plan prêt → [plan-pld.md](plan-pld.md). D'abord : reprendre l'historique ClickUp → [07-import-clickup.md](07-import-clickup.md)
+1. Générer le PLD depuis Plane et GitHub : plan prêt → [plan-pld.md](plan-pld.md), à revoir puis à implémenter. Historique ClickUp : ✅ importé.
 2. Copier les sauvegardes hors du poste, puis les automatiser → [sauvegardes.md](sauvegardes.md)
 3. Passer à un vrai domaine avant d'inviter l'équipe → [03-https.md](03-https.md)
 
 ## Reprendre ici (prochaine session)
 
-1. Supprimer le projet jetable `test` dans Plane.
-2. Import réel : `python3 pld/clickup_importer.py --appliquer` → [07-import-clickup.md](07-import-clickup.md), section 4.5. Attendu : `Terminé : 42 ticket(s), 33 lien(s), 4 cycle(s) créés, 0 ticket(s) complétés.`
-3. Supprimer la clé Plane « Import ClickUp », régénérer le token ClickUp, `git push`.
-4. Revoir [plan-pld.md](plan-pld.md) : les prochaines tâches naissent dans GitHub.
+1. Supprimer la clé Plane « Import ClickUp » et son fichier CSV, régénérer le token ClickUp, `git push`.
+2. Revoir [plan-pld.md](plan-pld.md) : les prochaines tâches naissent dans GitHub. Trancher les « Points à trancher ».
+3. Étape 1 du générateur de PLD : le squelette.
 
 ## À faire de ton côté (en attente)
 
-1. **Importer ClickUp dans Plane** : essai dans le projet jetable validé. Reste : supprimer le projet `test`, import réel, puis supprimer la clé Plane « Import ClickUp » et régénérer le token ClickUp → [07-import-clickup.md](07-import-clickup.md), section 4.5.
+1. **Après l'import ClickUp** : supprimer la clé Plane « Import ClickUp » et `~/Downloads/secret-key-1793653601856.csv`, régénérer le token ClickUp.
 2. Revoir le plan du PLD : les prochaines tâches seront créées directement dans GitHub.
 3. Noter les dates d'expiration du token GitHub et de la clé Plane (90 jours si le réglage proposé a été suivi).
 4. Pour le PLD : date de la prochaine remise, liste des membres (nom, compte Plane, compte GitHub) → [plan-pld.md](plan-pld.md).
@@ -69,6 +68,7 @@ Mis à jour le 2026-11-06.
 | 2026-11-02 | Extraction ClickUp réelle : 4 sprints (tâches parentes), 38 tâches. Table ClickUp → issues GitHub validée. Importeur écrit, 8 tests face à un faux Plane. Pas encore lancé sur Plane. |
 | 2026-11-02 | Sauvegardes Plane et n8n faites. Import dans un projet jetable : OK. Ajout des tickets parents (phases, sprints) et des dates du sprint, à la demande de l'utilisateur. |
 | 2026-11-03 | Relance sur le projet jetable : tickets parents et dates validés par l'utilisateur. Import réel pas encore lancé. |
+| 2026-11-06 | Projet jetable `test` supprimé. Import ClickUp réel dans Flowly : 42 tickets, 33 liens, 4 cycles (essai à blanc : 79 actions). |
 | 2026-11-06 | Issues et tickets de test (`Frontend#47`, `Frontend#49`, `Backend#35`) supprimés par l'utilisateur. |
 | 2026-10-31 | 1ʳᵉ sauvegarde Plane rapatriée (chiffrée). Test de restauration réussi : données identiques (2 utilisateurs, 1 projet, 7 tickets). Aucun fichier joint à ce moment-là. |
 

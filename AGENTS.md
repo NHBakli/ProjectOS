@@ -32,7 +32,7 @@ Project OS sert à piloter **Flowly** : application de productivité gamifiée (
 - Pour un choix qui lui revient : questions à options, avec une recommandation.
 - n8n 2.x : après une modification, **Save** puis **Publish**, sinon l'ancienne version reste active.
 
-## État au 2026-11-03
+## État au 2026-11-06
 
 | Brique | État |
 |---|---|
@@ -48,7 +48,7 @@ Workflow Plane → GitHub (`docs/06-plane-github.md`) : label Plane `frontend`/`
 
 Détails et journal : `docs/00-etat.md`. Choix techniques : `docs/decisions.md`.
 
-## Reprise en cours (2026-11-02)
+## Reprise ClickUp (terminée le 2026-11-06)
 
 Sujet : **reprendre l'historique ClickUp dans Plane** (étape 0 du PLD). Guide : `docs/07-import-clickup.md`.
 
@@ -59,8 +59,9 @@ Sujet : **reprendre l'historique ClickUp dans Plane** (étape 0 du PLD). Guide :
 | ⚠️ Changement de cap | L'utilisateur dit que **les prochaines tâches seront créées directement dans GitHub** (plus dans Plane). Le PLD croisera Plane (historique) et les backlogs GitHub (qui a fait quoi, ce qui est fini). À répercuter dans `docs/plan-pld.md` : sens du workflow n8n, source de vérité, estimations. |
 | Table validée | `~/.config/projectos/pld.yml` (hors Git) : 38 tâches, 31 issues GitHub citées (toutes vérifiées existantes), sections `plane:` et `clickup_import:`. |
 | Importeur | `pld/clickup_importer.py` : `--plan` (hors ligne), essai à blanc par défaut (GET seulement), `--appliquer` (confirmation `oui`), `--projet` pour un projet jetable. Tests face à un faux Plane. |
-| Essai 2026-11-02 | Projet jetable `test` (`0e5fe1d2-…`) : import OK (38 tickets, 33 liens, 4 cycles, 121 requêtes). Retour de l'utilisateur : il veut les **tickets parents** (phases, sprints) comme ClickUp, et des **dates** sur les tâches. Ajouté : ticket parent + cycle, dates du sprint héritées, relance qui complète parent/dates vides sans rien remplacer. Relance sur `test` validée par l'utilisateur le 2026-11-03. Projet Flowly réel : **pas encore importé**. |
-| En attente de l'utilisateur | 1) Supprimer le projet `test`. 2) Import réel (`docs/07-import-clickup.md` §4.5). 3) Supprimer la clé Plane « Import ClickUp », régénérer le token ClickUp. 4) `git push`. |
+| Essai 2026-11-02 | Projet jetable `test` (`0e5fe1d2-…`) : import OK (38 tickets, 33 liens, 4 cycles, 121 requêtes). Retour de l'utilisateur : il veut les **tickets parents** (phases, sprints) comme ClickUp, et des **dates** sur les tâches. Ajouté : ticket parent + cycle, dates du sprint héritées, relance qui complète parent/dates vides sans rien remplacer. Relance sur `test` validée par l'utilisateur le 2026-11-03. Projet `test` supprimé. |
+| Import réel 2026-11-06 | Projet Flowly : 42 tickets (4 parents + 38), 33 liens, 4 cycles. Résultat annoncé OK par l'utilisateur. |
+| En attente de l'utilisateur | Supprimer la clé Plane « Import ClickUp » et son CSV dans `~/Downloads`, régénérer le token ClickUp, `git push`. |
 
 Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) :
 
@@ -75,7 +76,8 @@ Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) 
 ## La suite (dans l'ordre)
 
 1. **Générer le PLD Epitech depuis Plane + GitHub** : plan validé dans `docs/plan-pld.md`, **à implémenter** (étapes 1 à 7). Choix de l'utilisateur : script sur le poste, modèle de description dans les tickets, chiffres + texte fixe, période = entre deux remises. Modèles officiels hors Git : `~/Downloads/PLD_Template.docx`, `PLD_Suivi_Taches.xlsx`, `Processus_PLD (1).pdf`. Brouillon du Sprint 1 : dépôt `Flowly-PBS/Documentation`, dossier `PLD/`. Commencer par les « Points à trancher » du plan.
-   **Étape 0 presque finie : reprise de l'historique ClickUp** → `docs/07-import-clickup.md`. Extraction, correspondances, importeur et essai dans un projet jetable : faits et validés. Reste l'import réel (voir « Reprise en cours »).
+   **Étape 0 finie (2026-11-06) : historique ClickUp importé dans Plane** → `docs/07-import-clickup.md`.
+   Les projets GitHub de Flowly-PBS ont déjà les champs `Status`, `Estimate`, `Start date`, `Target date` (projet 1 : `Iteration` au lieu des dates). Aucun modèle d'issue (`.github/ISSUE_TEMPLATE`) dans les dépôts.
    **Ensuite** : revoir `docs/plan-pld.md` après le changement de cap (tâches créées dans GitHub), trancher ses « Points à trancher », puis l'étape 1 (squelette). Les tickets parents (phases, sprints) ne comptent pas comme des cartes.
 2. **Sauvegardes** : copie hors du poste (disque externe ou cloud), puis automatisation. Le datastore K3s n'est pas encore sauvegardé.
 3. **Vrai domaine** (ou DuckDNS) avant d'inviter l'équipe. Il faudra changer les URL de Plane, n8n et des webhooks.

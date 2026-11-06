@@ -136,7 +136,7 @@ Accès :
 
 Chaque étape se termine par un test qui passe.
 
-0. **Reprise ClickUp** : extraction ✅, correspondances ✅, importeur ✅ (`pld/clickup_importer.py`), essai dans un projet jetable ✅. Import réel à lancer → [07-import-clickup.md](07-import-clickup.md).
+0. **Reprise ClickUp** : extraction ✅, correspondances ✅, importeur ✅ (`pld/clickup_importer.py`), essai dans un projet jetable ✅, import réel ✅ (2026-11-06) → [07-import-clickup.md](07-import-clickup.md).
 1. **Squelette** : dossier `pld/`, config d'exemple, `generer-pld.sh`, dépendances épinglées. Test : `--aide` s'affiche.
 2. **Lecture Plane** + fausses données. Test local. Puis tu lances `--extraire` (lecture seule, JSON sans secret) sur le vrai Plane.
 3. **Lecture GitHub** + croisement. Test sur les vraies issues (lecture seule, depuis mon poste).

@@ -4,15 +4,23 @@
 Lancer par ./scripts/generer-pld.sh (environnement Python isolé, dépendances épinglées).
 Lecture seule : rien n'est modifié dans Plane ni dans GitHub. Plan : docs/plan-pld.md.
 
-État : étape 1 (squelette). Lit la config, choisit la période, prépare les chemins.
-Les lectures Plane et GitHub arrivent aux étapes 2 et 3.
+État : étapes 1 et 2. Lit la config, choisit la période ; avec --extraire, lit Plane
+(lecture seule) et enregistre un JSON sans secret dans ~/projectos-pld/plane/.
+La lecture de GitHub arrive à l'étape 3.
 """
 import argparse
+import datetime as dt
+import getpass
+import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config as cfg_mod  # noqa: E402
+import source_plane  # noqa: E402
+
+EXTRACTIONS = Path.home() / "projectos-pld" / "plane"
 
 EXEMPLES = """\
 exemples :
@@ -20,6 +28,8 @@ exemples :
       période de pld.yml (pld.debut_par_defaut → pld.remise_suivante)
   ./scripts/generer-pld.sh 2 --du 2026-10-02 --au 2026-12-02
   ./scripts/generer-pld.sh 2 --sprints "Sprint N°2" "Sprint N°3"
+  ./scripts/generer-pld.sh 2 --extraire
+      lit Plane (lecture seule, clé API demandée), enregistre ~/projectos-pld/plane/plane-….json
 """
 
 
@@ -38,6 +48,8 @@ def analyser_arguments(argv):
     p.add_argument("--sprints", nargs="+", metavar="NOM", help="sprints à inclure (noms des cycles Plane), à la place des dates")
     p.add_argument("--config", type=Path, default=cfg_mod.CONFIG, help=f"fichier de configuration (défaut : {cfg_mod.CONFIG})")
     p.add_argument("--sortie", type=Path, help="dossier de sortie (défaut : pld.sortie, sinon ~/projectos-pld/PLD)")
+    p.add_argument("--extraire", action="store_true",
+                   help="lire Plane (GET seulement) et enregistrer l'extraction JSON (clé : PLANE_API_KEY, sinon demandée)")
     args = p.parse_args(argv)
     if args.numero < 1:
         p.error("le numéro du PLD doit être 1 ou plus")
@@ -84,9 +96,42 @@ def main(argv=None):
     if manque:
         print("⚠ Modèle Epitech introuvable : indiquer son chemin dans pld.modeles.")
     print()
-    print("Lecture de Plane et de GitHub : pas encore écrite (étapes 2 et 3 de docs/plan-pld.md).")
-    print("Rien n'a été lu ni écrit.")
+    if not args.extraire:
+        print("Plane non lu : ajouter --extraire. GitHub : pas encore écrit (étape 3 de docs/plan-pld.md).")
+        print("Rien n'a été lu ni écrit.")
+        return 0
+    try:
+        chemin, extraction = extraire_plane(cfg)
+        du, au = periode.du, periode.au
+        if periode.sprints:
+            du, au = source_plane.sprints_vers_periode(extraction, periode.sprints)
+            print(f"Période des sprints : {du} → {au}")
+    except source_plane.ErreurPlane as e:
+        print(f"✗ {e}", file=sys.stderr)
+        return 1
+    for ligne in source_plane.resume(extraction, du, au):
+        print(ligne)
+    print(f"Extraction : {chemin} ({extraction['requetes']} requêtes, lecture seule)")
+    print("GitHub : pas encore lu (étape 3). Aucun fichier de PLD écrit.")
     return 0
+
+
+def extraire_plane(cfg, dossier=None, maintenant=None):
+    """Lit Plane et enregistre le JSON (droits 600). Renvoie (chemin, extraction)."""
+    dossier = dossier or EXTRACTIONS  # lu à l'appel (remplacé dans les tests)
+    url = source_plane.url_plane(cfg)
+    cle = os.environ.get("PLANE_API_KEY") or getpass.getpass("Clé API Plane (saisie masquée) : ")
+    if not cle.strip():
+        raise source_plane.ErreurPlane("Clé API Plane vide")
+    plane = source_plane.PlaneLecture(url, cle.strip(), cfg.espace, cfg.projet_id)
+    maintenant = maintenant or dt.datetime.now(dt.timezone.utc)
+    extraction = source_plane.extraire(plane, cfg.org, maintenant)
+    dossier.mkdir(parents=True, exist_ok=True, mode=0o700)
+    chemin = dossier / f"plane-{maintenant.strftime('%Y%m%dT%H%M%SZ')}.json"
+    fd = os.open(chemin, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(extraction, f, ensure_ascii=False, indent=1)
+    return chemin, extraction
 
 
 if __name__ == "__main__":

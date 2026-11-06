@@ -100,7 +100,7 @@ Chaque contrôle vise un critère de la note.
 2. Champ `Estimate` = charge en jours (`0.5` à `4`).
 3. `Start date` / `Target date` remplis (projet 1 : `Iteration`).
 4. Le 1ᵉʳ assigné est le responsable.
-5. Corps de l'issue créé avec le modèle d'issue `pld/modeles/carte-pld.yml` (rubriques de la fiche story). Installation : [08-pld.md](08-pld.md), section 3.
+5. Corps de l'issue créé avec le modèle d'issue `pld/modeles/carte-pld.yml` (rubriques de la fiche story). Installation : [08-pld.md](08-pld.md), section 4.
 
 ## Conventions à mettre en place dans Plane (avant la 1ʳᵉ génération)
 
@@ -169,7 +169,7 @@ Chaque étape se termine par un test qui passe.
 
 0. **Reprise ClickUp** : extraction ✅, correspondances ✅, importeur ✅ (`pld/clickup_importer.py`), essai dans un projet jetable ✅, import réel ✅ (2026-11-06) → [07-import-clickup.md](07-import-clickup.md).
 1. **Squelette** ✅ (2026-11-06) → [08-pld.md](08-pld.md) : dossier `pld/`, config d'exemple, `generer-pld.sh` (options `--du`/`--au`/`--sprints`), dépendances épinglées, modèle d'issue GitHub. Test : `--aide` s'affiche.
-2. **Lecture Plane** + fausses données. Test local. Puis tu lances `--extraire` (lecture seule, JSON sans secret) sur le vrai Plane.
+2. **Lecture Plane** ✅ code et tests (2026-11-06), essai réel à faire → [08-pld.md](08-pld.md) section 3 : `pld/source_plane.py` + fausses données. Test local. Puis tu lances `--extraire` (lecture seule, JSON sans secret) sur le vrai Plane.
 3. **Lecture GitHub** + croisement. Test sur les vraies issues (lecture seule, depuis mon poste).
 4. **Contrôles** + `rapport-coherence.md`. Test : chaque contrôle a un cas qui le déclenche.
 5. **Classeur Excel**. Test : ouverture du fichier, contenu des cellules relu par le test.

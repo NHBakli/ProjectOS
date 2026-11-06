@@ -35,14 +35,14 @@ Mis à jour le 2026-11-06.
 ## Reprendre ici (prochaine session)
 
 1. Supprimer la clé Plane « Import ClickUp » et son fichier CSV, régénérer le token ClickUp, `git push`.
-2. Plan du PLD revu le 2026-11-06 (cartes Plane + GitHub, période au choix) → [plan-pld.md](plan-pld.md). Prochaine remise : 2026-12-02. Reste : prénoms et noms des membres.
+2. Plan du PLD revu le 2026-11-06 (cartes Plane + GitHub, période au choix) → [plan-pld.md](plan-pld.md). Prochaine remise : 2026-12-02. Membres : 8 prénoms dans `pld.yml`.
 3. Étape 1 du générateur de PLD : le squelette.
 
 ## À faire de ton côté (en attente)
 
 1. **Après l'import ClickUp** : supprimer la clé Plane « Import ClickUp » et `~/Downloads/secret-key-1793653601856.csv`, régénérer le token ClickUp.
 2. Noter les dates d'expiration du token GitHub et de la clé Plane (90 jours si le réglage proposé a été suivi).
-3. Pour le PLD : tableau pseudo GitHub → prénom et nom des membres (prochaine remise : 2026-12-02) → [plan-pld.md](plan-pld.md).
+3. Pour le PLD : date de la remise précédente (sinon la période commence le 2026-10-02) → [plan-pld.md](plan-pld.md).
 4. `git push` des derniers commits.
 
 ## Journal

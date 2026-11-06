@@ -4,7 +4,9 @@ Clés lues (voir pld/pld.example.yml) :
   plane.espace, plane.projet_id, plane.url (facultatif)
   github.org, github.projets
   pld.projet, pld.remise_suivante, pld.debut_par_defaut, pld.membres, pld.ignores,
-  pld.sortie, pld.modeles.docx, pld.modeles.xlsx
+  pld.sortie, pld.modeles.docx, pld.modeles.xlsx,
+  pld.responsable, pld.email, pld.promotion, pld.revisions,
+  pld.textes.resume, pld.textes.schema, pld.textes.plan_alpha_beta, pld.textes.bloquants, pld.textes.commentaire
 """
 import datetime as dt
 import re
@@ -44,6 +46,11 @@ class Config:
     sortie: Path
     modele_docx: Path
     modele_xlsx: Path
+    responsable: str | None = None
+    email: str | None = None
+    promotion: str | None = None
+    revisions: list = field(default_factory=list)
+    textes: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -116,6 +123,23 @@ def lire_config(donnees):
     modeles = pld.get("modeles") or {}
     if not isinstance(modeles, dict):
         raise ErreurConfig("pld.modeles : dictionnaire avec docx et xlsx")
+    textes = pld.get("textes") or {}
+    if not isinstance(textes, dict):
+        raise ErreurConfig("pld.textes : dictionnaire (resume, schema, plan_alpha_beta, bloquants, commentaire)")
+    for cle, valeur in textes.items():
+        if isinstance(valeur, dict):
+            tableau = valeur.get("tableau") or []
+            if not isinstance(tableau, list) or not all(isinstance(l, list) for l in tableau):
+                raise ErreurConfig(f"pld.textes.{cle}.tableau : liste de lignes, la première est l'en-tête")
+            if valeur.get("image") and not Path(str(valeur["image"])).expanduser().is_file():
+                raise ErreurConfig(f"pld.textes.{cle}.image : fichier introuvable")
+            if valeur.get("image"):
+                valeur["image"] = str(Path(str(valeur["image"])).expanduser())
+        elif not isinstance(valeur, str):
+            raise ErreurConfig(f"pld.textes.{cle} : texte, ou {{texte, tableau, image, note}}")
+    revisions = pld.get("revisions") or []
+    if not isinstance(revisions, list) or not all(isinstance(r, dict) for r in revisions):
+        raise ErreurConfig("pld.revisions : liste de {date, version, auteurs, sections, commentaires}")
     return Config(
         espace=str(espace),
         projet_id=projet_id,
@@ -130,6 +154,11 @@ def lire_config(donnees):
         sortie=_chemin(pld.get("sortie"), SORTIE),
         modele_docx=_chemin(modeles.get("docx"), MODELE_DOCX),
         modele_xlsx=_chemin(modeles.get("xlsx"), MODELE_XLSX),
+        responsable=pld.get("responsable"),
+        email=pld.get("email"),
+        promotion=str(pld["promotion"]) if pld.get("promotion") else None,
+        revisions=[{k: str(v) for k, v in r.items()} for r in revisions],
+        textes=textes,
     )
 
 

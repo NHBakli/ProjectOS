@@ -1,6 +1,6 @@
 # Plan : générer le PLD depuis Plane et GitHub
 
-Statut : **plan validé, à implémenter**. Rédigé le 2026-11-01, revu le 2026-11-06 (cartes lues aussi dans GitHub).
+Statut : **implémenté le 2026-11-06** (étapes 0 à 6), premier vrai PLD à générer par l'utilisateur. Guide : [08-pld.md](08-pld.md).
 
 ## Objectif
 
@@ -169,12 +169,12 @@ Chaque étape se termine par un test qui passe.
 
 0. **Reprise ClickUp** : extraction ✅, correspondances ✅, importeur ✅ (`pld/clickup_importer.py`), essai dans un projet jetable ✅, import réel ✅ (2026-11-06) → [07-import-clickup.md](07-import-clickup.md).
 1. **Squelette** ✅ (2026-11-06) → [08-pld.md](08-pld.md) : dossier `pld/`, config d'exemple, `generer-pld.sh` (options `--du`/`--au`/`--sprints`), dépendances épinglées, modèle d'issue GitHub. Test : `--aide` s'affiche.
-2. **Lecture Plane** ✅ code et tests (2026-11-06), essai réel à faire → [08-pld.md](08-pld.md) section 3 : `pld/source_plane.py` + fausses données. Test local. Puis tu lances `--extraire` (lecture seule, JSON sans secret) sur le vrai Plane.
-3. **Lecture GitHub** + croisement. Test sur les vraies issues (lecture seule, depuis mon poste).
-4. **Contrôles** + `rapport-coherence.md`. Test : chaque contrôle a un cas qui le déclenche.
-5. **Classeur Excel**. Test : ouverture du fichier, contenu des cellules relu par le test.
-6. **PLD Word**. Test : conversion en PDF avec LibreOffice, relecture visuelle.
-7. **Doc** `docs/08-pld.md` (guide pas à pas) et premier vrai PLD, que tu relis.
+2. **Lecture Plane** ✅ (2026-11-06) : `pld/source_plane.py`, testée face à un faux Plane. Pas encore lancée sur le vrai Plane (clé de l'utilisateur).
+3. **Lecture GitHub** + croisement ✅ : `pld/source_github.py`, `pld/analyse.py`. Testée sur le vrai GitHub (lecture seule) et face à un faux `gh`.
+4. **Contrôles** + `rapport-coherence.md` ✅ : `pld/rapport.py`. Chaque contrôle a un cas de test qui le déclenche.
+5. **Classeur Excel** ✅ : `pld/sortie_xlsx.py`. Cellules relues par le test, formules du tableau de bord vérifiées dans LibreOffice.
+6. **PLD Word** ✅ : `pld/sortie_docx.py`, sur le modèle officiel (pas de repli nécessaire). PDF LibreOffice relu (27 pages) ; le test vérifie que tous les liens internes ont un signet.
+7. **Doc** `docs/08-pld.md` ✅. Premier vrai PLD : **à lancer et relire par l'utilisateur**.
 
 ## Points à trancher demain
 
@@ -185,8 +185,8 @@ Chaque étape se termine par un test qui passe.
 | ID des cartes | Identifiant Plane (`FLOWL-12`) si la carte vient de Plane, sinon `Frontend#40`. Le modèle Excel utilise `1.1`, `1.2`… : on peut l'afficher en plus. |
 | Date de la prochaine remise | Tranché : **2026-12-02** (dans `pld.yml`, `pld.remise_suivante`). Fin de période par défaut ; on peut toujours la choisir au lancement. |
 | Liste des membres | Pseudos lus dans GitHub (membres de l'organisation, contributeurs), prénoms et noms donnés par l'utilisateur. Rangés dans `pld.yml` (`pld.membres`), **jamais dans ce dépôt**. Le PLD affiche les vrais noms. |
-| Textes libres | Reprendre ceux du brouillon du Sprint 1 (résumé, schéma fonctionnel, plan alpha/bêta) dans `pld.yml`. |
-| Modèle Word trop complexe à remplir proprement | Repli : générer un document neuf qui reprend ses styles et sa structure. On décide après l'étape 6. |
+| Textes libres | Tranché : repris du brouillon du Sprint 1 dans `pld.yml` (`pld.textes`). |
+| Modèle Word trop complexe à remplir proprement | Tranché : le modèle officiel est rempli directement (éléments modèles dupliqués). |
 
 ## Ce qui n'est pas prévu (pour l'instant)
 

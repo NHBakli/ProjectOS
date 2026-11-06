@@ -169,7 +169,7 @@ class LigneDeCommande(unittest.TestCase):
 
     def test_squelette_avec_exemple(self):
         with tempfile.TemporaryDirectory() as d:
-            code, out, err = self.lancer("2", "--config", str(EXEMPLE), "--sortie", d, "--du", "2026-10-02")
+            code, out, err = self.lancer("2", "--config", str(EXEMPLE), "--sortie", d, "--du", "2026-10-02", "--verifier")
         self.assertEqual(code, 0, err)
         self.assertIn("Période : 2026-10-02 → 2026-12-01", out)
         self.assertIn("PLD_MonProjet_Sprint2.docx", out)
@@ -178,7 +178,7 @@ class LigneDeCommande(unittest.TestCase):
         self.assertNotIn("Prénom Nom", out)  # aucun nom de membre dans la sortie
 
     def test_erreur_de_periode(self):
-        code, _, err = self.lancer("2", "--config", str(EXEMPLE), "--du", "2026-12-05")
+        code, _, err = self.lancer("2", "--config", str(EXEMPLE), "--du", "2026-12-05", "--verifier")
         self.assertEqual(code, 1)
         self.assertIn("Période à l'envers", err)
 

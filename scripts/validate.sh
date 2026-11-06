@@ -24,3 +24,8 @@ for playbook in infrastructure/ansible/playbooks/*.yml; do
 done
 ansible-lint infrastructure/ansible/playbooks/*.yml
 python3 -m unittest discover -s pld/tests
+# Tests Word/Excel du générateur de PLD : avec son environnement s'il existe (./scripts/generer-pld.sh le crée)
+pld_python="${PROJECTOS_PLD_VENV:-$HOME/.cache/projectos/pld-venv}/bin/python"
+if [[ -x "$pld_python" ]]; then
+  "$pld_python" -m unittest discover -s pld/tests
+fi

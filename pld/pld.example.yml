@@ -18,6 +18,21 @@ pld:
   membres:                         # pseudo GitHub -> nom affiché dans le PLD
     pseudo-exemple: "Prénom Nom"
   ignores: ["compte-externe"]      # membres de l'organisation hors équipe
+  responsable: "Prénom Nom"         # descriptif du document (vide = « [À compléter] »)
+  email: "equipe@exemple.fr"
+  promotion: "2027"
+  revisions:                       # révisions précédentes ; celle du PLD généré est ajoutée
+    - {date: "05/10/2026", version: "1.0", auteurs: "Équipe", sections: "Toutes", commentaires: "PLD n°1"}
+  textes:
+    resume: "Deux phrases sur le projet. Le script ajoute les chiffres de la période."
+    schema:                        # texte simple, ou {texte, tableau, image, note}
+      tableau:
+        - ["Entrée", "Service", "Résultat"]
+        - ["Utilisateur", "Authentification", "Compte"]
+      note: "Modules prévus plus tard."
+    plan_alpha_beta: "Fonctionnalités à tester en alpha puis en bêta."
+    # bloquants: "ajouté sous les points bloquants calculés"
+    # commentaire: "ajouté sous le commentaire général calculé"
   # sortie: "~/projectos-pld/PLD"
   # modeles:
   #   docx: "~/Downloads/PLD_Template.docx"

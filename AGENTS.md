@@ -75,14 +75,14 @@ Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) 
 
 ## La suite (dans l'ordre)
 
-1. **Générer le PLD Epitech depuis Plane + GitHub** : plan validé dans `docs/plan-pld.md`, **à implémenter** (étapes 1 à 7). Choix de l'utilisateur : script sur le poste, modèle de description dans les tickets, chiffres + texte fixe, période = entre deux remises. Modèles officiels hors Git : `~/Downloads/PLD_Template.docx`, `PLD_Suivi_Taches.xlsx`, `Processus_PLD (1).pdf`. Brouillon du Sprint 1 : dépôt `Flowly-PBS/Documentation`, dossier `PLD/`. Commencer par les « Points à trancher » du plan.
+1. **Générer le PLD Epitech depuis Plane + GitHub** : **implémenté le 2026-11-06** (`docs/08-pld.md`, `docs/plan-pld.md`). Reste : premier vrai PLD lancé par l'utilisateur (clé Plane), relecture. Choix de l'utilisateur : script sur le poste, modèle de description dans les tickets, chiffres + texte fixe, période = entre deux remises. Modèles officiels hors Git : `~/Downloads/PLD_Template.docx`, `PLD_Suivi_Taches.xlsx`, `Processus_PLD (1).pdf`. Brouillon du Sprint 1 : dépôt `Flowly-PBS/Documentation`, dossier `PLD/`. Commencer par les « Points à trancher » du plan.
    **Étape 0 finie (2026-11-06) : historique ClickUp importé dans Plane** → `docs/07-import-clickup.md`.
    Les projets GitHub de Flowly-PBS ont déjà les champs `Status`, `Estimate`, `Start date`, `Target date` (projet 1 : `Iteration` au lieu des dates). Aucun modèle d'issue (`.github/ISSUE_TEMPLATE`) dans les dépôts.
    **Choix du 2026-11-06** : cartes = Plane + GitHub croisés (toutes les tâches finissent dans GitHub), workflow n8n laissé actif, fiches stories par modèle d'issue GitHub, période choisie au lancement (dates ou sprints). Détail : `docs/plan-pld.md`.
    **Prochaine remise : 2026-12-02.** Membres : 8 pseudos GitHub → prénoms dans `pld.yml` (`pld.membres`, 4 membres de l'org ignorés), jamais dans ce dépôt. Début de période par défaut : 2026-10-02 (date de la remise précédente non donnée).
    **Étape 1 (squelette) faite le 2026-11-06** → `docs/08-pld.md`. Modèle d'issue `pld/modeles/carte-pld.yml` à installer par l'utilisateur dans les dépôts.
-   **Étape 2 (lecture Plane) écrite le 2026-11-06** : `pld/source_plane.py`, `generer-pld.sh N --extraire` → `~/projectos-pld/plane/plane-*.json`. Testée face à un faux Plane ; **essai réel à lancer par l'utilisateur**.
-   **Ensuite** : étape 3, lecture de GitHub (`pld/source_github.py`, GraphQL via `gh auth token`, champs des projets) et croisement. Les tickets parents (phases, sprints) ne comptent pas comme des cartes.
+   **Étapes 2 à 7 faites le 2026-11-06** : `source_plane.py` (GET), `source_github.py` (`gh api graphql`, query seulement), `analyse.py` (croisement, contrôles), `rapport.py`, `sortie_xlsx.py`, `sortie_docx.py`. `generer-pld.sh N` fait tout ; `--plane FICHIER` réutilise une extraction ; `--verifier`, `--extraire`. Testé : vrai GitHub + extraction Plane **simulée** depuis l'import ClickUp (le vrai Plane n'a pas été lu : clé de l'utilisateur). Word relu en PDF (LibreOffice snap : ne lit pas `/tmp`, passer par un dossier du home).
+   Constats du 2026-11-06 : aucune valeur `Estimate`/`Start date`/`Target date` dans les projets GitHub ; beaucoup d'issues du Sprint 2 sans assigné ; `Backend#35` (« Error-free test ») encore ouverte ; le brouillon du Sprint 1 cite une responsable absente de `pld.membres` (nom dans le dépôt Documentation).
 2. **Sauvegardes** : copie hors du poste (disque externe ou cloud), puis automatisation. Le datastore K3s n'est pas encore sauvegardé.
 3. **Vrai domaine** (ou DuckDNS) avant d'inviter l'équipe. Il faudra changer les URL de Plane, n8n et des webhooks.
 4. Plus tard : observabilité légère, CI de déploiement, GitOps seulement quand les restaurations sont fiables. n8n signale que le mode « task runner interne » sera retiré : passer en runners externes lors d'une mise à jour.
@@ -107,7 +107,7 @@ Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) 
 | `kubernetes/` | Manifests cert-manager et smoke tests |
 | `scripts/generate-secrets.sh plane\|backup\|n8n` | Crée les secrets directement chiffrés (Vault), un seul mot de passe |
 | `n8n/workflows/` | Workflows n8n à importer (sans secret ni domaine) |
-| `pld/` | Générateur de PLD (en cours) : `generer_pld.py` (lancé par `scripts/generer-pld.sh`, venv `~/.cache/projectos/pld-venv`), `config.py`, `source_plane.py` (GET seulement), `fiche_story.py`, `modeles/carte-pld.yml` (modèle d'issue), `clickup_*.py`, tests dans `pld/tests/` (lancés par `validate.sh`) |
+| `pld/` | Générateur de PLD (en cours) : `generer_pld.py` (lancé par `scripts/generer-pld.sh`, venv `~/.cache/projectos/pld-venv`), `config.py`, `source_plane.py` (GET seulement), `source_github.py`, `analyse.py`, `rapport.py`, `sortie_xlsx.py`, `sortie_docx.py`, `fiche_story.py`, `modeles/carte-pld.yml` (modèle d'issue), `clickup_*.py`, tests dans `pld/tests/` (lancés par `validate.sh`) |
 | `~/projectos-pld/` (hors Git) | Extractions ClickUp (contiennent noms et e-mails), extractions Plane (`plane/`), PLD générés (`PLD/`) |
 | `scripts/test-n8n-workflow.sh` | Teste un workflow dans un n8n local (Docker) face à de fausses API Plane/GitHub |
 | `~/.config/projectos/` (hors Git) | `hosts.yml`, `k3s-approval.yml`, `platform.yml`, `*.vault.yml` |

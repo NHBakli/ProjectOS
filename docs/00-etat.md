@@ -36,14 +36,15 @@ Mis à jour le 2026-11-06.
 
 1. Supprimer la clé Plane « Import ClickUp » et son fichier CSV, régénérer le token ClickUp, `git push`.
 2. Plan du PLD revu le 2026-11-06 (cartes Plane + GitHub, période au choix) → [plan-pld.md](plan-pld.md). Prochaine remise : 2026-12-02. Membres : 8 prénoms dans `pld.yml`.
-3. Étape 1 du générateur de PLD : le squelette.
+3. Étape 2 du générateur de PLD : lecture de Plane. (Étape 1, le squelette : ✅ → [08-pld.md](08-pld.md).)
 
 ## À faire de ton côté (en attente)
 
 1. **Après l'import ClickUp** : supprimer la clé Plane « Import ClickUp » et `~/Downloads/secret-key-1793653601856.csv`, régénérer le token ClickUp.
 2. Noter les dates d'expiration du token GitHub et de la clé Plane (90 jours si le réglage proposé a été suivi).
 3. Pour le PLD : date de la remise précédente (sinon la période commence le 2026-10-02) → [plan-pld.md](plan-pld.md).
-4. `git push` des derniers commits.
+4. Installer le modèle d'issue « Carte PLD » dans `Frontend`, `Backend`, `Mobile`, `DevOps` → [08-pld.md](08-pld.md), section 3.
+5. `git push` des derniers commits.
 
 ## Journal
 
@@ -69,6 +70,7 @@ Mis à jour le 2026-11-06.
 | 2026-11-03 | Relance sur le projet jetable : tickets parents et dates validés par l'utilisateur. Import réel pas encore lancé. |
 | 2026-11-06 | Projet jetable `test` supprimé. Import ClickUp réel dans Flowly : 42 tickets, 33 liens, 4 cycles (essai à blanc : 79 actions). |
 | 2026-11-06 | Plan du PLD revu : cartes Plane + GitHub croisées, fiches stories par modèle d'issue GitHub, période choisie au lancement. |
+| 2026-11-06 | Générateur de PLD, étape 1 : `scripts/generer-pld.sh` (période par dates ou sprints), config, modèle d'issue « Carte PLD », lecture des fiches stories. 33 tests OK. Lancé sur la vraie config : OK, rien lu ni écrit. |
 | 2026-11-06 | Issues et tickets de test (`Frontend#47`, `Frontend#49`, `Backend#35`) supprimés par l'utilisateur. |
 | 2026-10-31 | 1ʳᵉ sauvegarde Plane rapatriée (chiffrée). Test de restauration réussi : données identiques (2 utilisateurs, 1 projet, 7 tickets). Aucun fichier joint à ce moment-là. |
 

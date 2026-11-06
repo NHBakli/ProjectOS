@@ -100,7 +100,7 @@ Chaque contrôle vise un critère de la note.
 2. Champ `Estimate` = charge en jours (`0.5` à `4`).
 3. `Start date` / `Target date` remplis (projet 1 : `Iteration`).
 4. Le 1ᵉʳ assigné est le responsable.
-5. Corps de l'issue créé avec le modèle d'issue (rubriques de la fiche story). Modèle à écrire à l'étape 1.
+5. Corps de l'issue créé avec le modèle d'issue `pld/modeles/carte-pld.yml` (rubriques de la fiche story). Installation : [08-pld.md](08-pld.md), section 3.
 
 ## Conventions à mettre en place dans Plane (avant la 1ʳᵉ génération)
 
@@ -131,6 +131,10 @@ Points bloquants : aucun
 | Chemin | Rôle |
 |---|---|
 | `pld/generer_pld.py` | Point d'entrée : lit la config, appelle les étapes |
+| `pld/config.py` | Lecture et contrôle de `pld.yml`, choix de la période |
+| `pld/fiche_story.py` | Rubriques de fiche story (modèle Plane, formulaire GitHub, anglais de n8n) |
+| `pld/modeles/carte-pld.yml` | Modèle d'issue GitHub « Carte PLD » |
+| `pld/requirements.txt` | Dépendances, versions et empreintes figées |
 | `pld/source_plane.py` | Lecture **seule** de l'API Plane : projet, états, étiquettes, estimations, cycles, membres, tickets, liens |
 | `pld/source_github.py` | Lecture **seule** de GitHub (GraphQL) : issues des projets et leurs champs, issues liées, PR qui les ferment, PR fusionnées de la période |
 | `pld/analyse.py` | Croisement Plane ↔ GitHub, filtre de période, calculs (charges, avancement), contrôles |
@@ -164,7 +168,7 @@ Accès :
 Chaque étape se termine par un test qui passe.
 
 0. **Reprise ClickUp** : extraction ✅, correspondances ✅, importeur ✅ (`pld/clickup_importer.py`), essai dans un projet jetable ✅, import réel ✅ (2026-11-06) → [07-import-clickup.md](07-import-clickup.md).
-1. **Squelette** : dossier `pld/`, config d'exemple, `generer-pld.sh` (options `--du`/`--au`/`--sprints`), dépendances épinglées, modèle d'issue GitHub. Test : `--aide` s'affiche.
+1. **Squelette** ✅ (2026-11-06) → [08-pld.md](08-pld.md) : dossier `pld/`, config d'exemple, `generer-pld.sh` (options `--du`/`--au`/`--sprints`), dépendances épinglées, modèle d'issue GitHub. Test : `--aide` s'affiche.
 2. **Lecture Plane** + fausses données. Test local. Puis tu lances `--extraire` (lecture seule, JSON sans secret) sur le vrai Plane.
 3. **Lecture GitHub** + croisement. Test sur les vraies issues (lecture seule, depuis mon poste).
 4. **Contrôles** + `rapport-coherence.md`. Test : chaque contrôle a un cas qui le déclenche.

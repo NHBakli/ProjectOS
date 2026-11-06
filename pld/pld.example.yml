@@ -1,0 +1,24 @@
+# Exemple de configuration du générateur de PLD. Aucune donnée réelle.
+# Copier dans ~/.config/projectos/pld.yml (hors Git) puis adapter.
+# Les noms des membres ne vont JAMAIS dans ce dépôt public.
+
+plane:
+  # url: "https://plane.exemple.fr"   # facultatif : sinon déduite de platform.yml
+  espace: "mon-espace"
+  projet_id: "00000000-0000-0000-0000-000000000000"
+
+github:
+  org: "Mon-Org"
+  projets: [1, 2, 3]   # numéros des projets GitHub de l'organisation
+
+pld:
+  projet: "MonProjet"              # nom dans les fichiers : PLD_MonProjet_Sprint2.docx
+  debut_par_defaut: "2026-10-01"   # début de période si --du est absent
+  remise_suivante: "2026-12-01"    # fin de période si --au est absent
+  membres:                         # pseudo GitHub -> nom affiché dans le PLD
+    pseudo-exemple: "Prénom Nom"
+  ignores: ["compte-externe"]      # membres de l'organisation hors équipe
+  # sortie: "~/projectos-pld/PLD"
+  # modeles:
+  #   docx: "~/Downloads/PLD_Template.docx"
+  #   xlsx: "~/Downloads/PLD_Suivi_Taches.xlsx"

@@ -16,7 +16,9 @@ yamllint -d '{extends: relaxed, rules: {line-length: {max: 120}}}' \
   infrastructure/ansible/requirements.yml \
   infrastructure/ansible/playbooks/ infrastructure/ansible/roles/k3s/defaults/ \
   infrastructure/ansible/roles/k3s/tasks/ infrastructure/ansible/roles/k3s/handlers/ \
-  infrastructure/kind/cluster.yaml kubernetes/smoke/ kubernetes/cert-manager/ helm/
+  infrastructure/kind/cluster.yaml kubernetes/smoke/ kubernetes/cert-manager/ helm/ \
+  pld/pld.example.yml pld/modeles/
+bash -n scripts/generer-pld.sh
 for playbook in infrastructure/ansible/playbooks/*.yml; do
   ansible-playbook --syntax-check "$playbook"
 done

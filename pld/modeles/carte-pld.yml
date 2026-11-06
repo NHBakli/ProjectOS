@@ -1,0 +1,52 @@
+# Modèle d'issue GitHub (formulaire) pour une carte du PLD.
+# À copier dans chaque dépôt : .github/ISSUE_TEMPLATE/carte-pld.yml (voir docs/08-pld.md).
+# Les titres des rubriques sont lus par pld/fiche_story.py : ne pas les renommer.
+name: Carte PLD
+description: Nouvelle tâche, avec sa fiche story pour le PLD Epitech
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Après la création, dans le projet GitHub de l'équipe, remplir :
+        **Estimate** (charge en jours, de 0.5 à 4), **Start date**, **Target date**.
+        Le premier assigné est le responsable de la carte.
+  - type: input
+    id: en_tant_que
+    attributes:
+      label: En tant que
+      placeholder: utilisateur de Flowly
+    validations:
+      required: true
+  - type: input
+    id: je_veux
+    attributes:
+      label: Je veux
+      placeholder: démarrer une session de focus de 25 minutes
+    validations:
+      required: true
+  - type: input
+    id: afin_de
+    attributes:
+      label: Afin de
+      placeholder: rester concentré sans distraction
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Détails techniques, maquettes, liens.
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of Done
+      description: Conditions vérifiables pour dire que la carte est terminée.
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: input
+    id: bloquants
+    attributes:
+      label: Points bloquants
+      value: aucun

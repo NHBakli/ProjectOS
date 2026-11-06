@@ -71,6 +71,7 @@ Mis à jour le 2026-11-06.
 | 2026-11-03 | Relance sur le projet jetable : tickets parents et dates validés par l'utilisateur. Import réel pas encore lancé. |
 | 2026-11-06 | Projet jetable `test` supprimé. Import ClickUp réel dans Flowly : 42 tickets, 33 liens, 4 cycles (essai à blanc : 79 actions). |
 | 2026-11-06 | Plan du PLD revu : cartes Plane + GitHub croisées, fiches stories par modèle d'issue GitHub, période choisie au lancement. |
+| 2026-11-06 | RAM mesurée : 3,6 Go utilisés, 8,3 Go disponibles (le 92 % du panneau compte le cache). Plan de console web : [plan-console.md](plan-console.md). |
 | 2026-11-06 | Générateur de PLD, étapes 3 à 7 : lecture GitHub, croisement, contrôles, rapport, Excel et Word sur les modèles officiels. 56 tests OK. Essai complet : vrai GitHub + Plane simulé (depuis l'import ClickUp) → PLD de 27 pages relu en PDF. Vrai Plane pas encore lu. |
 | 2026-11-06 | Générateur de PLD, étape 2 : lecture seule de Plane (`--extraire`), JSON sans e-mail ni clé, période par sprints résolue depuis les cycles. 44 tests OK face à un faux Plane. Pas encore lancé sur le vrai Plane. |
 | 2026-11-06 | Générateur de PLD, étape 1 : `scripts/generer-pld.sh` (période par dates ou sprints), config, modèle d'issue « Carte PLD », lecture des fiches stories. 33 tests OK. Lancé sur la vraie config : OK, rien lu ni écrit. |

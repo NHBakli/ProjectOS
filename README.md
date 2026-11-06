@@ -39,6 +39,7 @@ Suis les guides dans l'ordre :
 - [Choix techniques](docs/decisions.md) : ce qu'on a choisi, et pourquoi.
 - [Reprendre l'historique ClickUp](docs/07-import-clickup.md) : fait (2026-11-06).
 - [Générer le PLD](docs/08-pld.md) : `./scripts/generer-pld.sh 2` → Word + Excel + rapport de cohérence. [Plan](docs/plan-pld.md).
+- [Console web du VPS](docs/plan-console.md) : plan (supervision + génération du PLD).
 - [AGENTS.md](AGENTS.md) : contexte et règles pour les agents IA (Codex, Claude Code…).
 
 ## Architecture

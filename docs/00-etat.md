@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 2026-11-03.
+Mis à jour le 2026-11-06.
 
 ## Le serveur
 
@@ -43,10 +43,9 @@ Mis à jour le 2026-11-03.
 
 1. **Importer ClickUp dans Plane** : essai dans le projet jetable validé. Reste : supprimer le projet `test`, import réel, puis supprimer la clé Plane « Import ClickUp » et régénérer le token ClickUp → [07-import-clickup.md](07-import-clickup.md), section 4.5.
 2. Revoir le plan du PLD : les prochaines tâches seront créées directement dans GitHub.
-3. Supprimer les issues et tickets de test (`Frontend#47`, `Frontend#49`, `Backend#35`).
-4. Noter les dates d'expiration du token GitHub et de la clé Plane (90 jours si le réglage proposé a été suivi).
-5. Pour le PLD : date de la prochaine remise, liste des membres (nom, compte Plane, compte GitHub) → [plan-pld.md](plan-pld.md).
-6. `git push` des derniers commits.
+3. Noter les dates d'expiration du token GitHub et de la clé Plane (90 jours si le réglage proposé a été suivi).
+4. Pour le PLD : date de la prochaine remise, liste des membres (nom, compte Plane, compte GitHub) → [plan-pld.md](plan-pld.md).
+5. `git push` des derniers commits.
 
 ## Journal
 
@@ -70,6 +69,7 @@ Mis à jour le 2026-11-03.
 | 2026-11-02 | Extraction ClickUp réelle : 4 sprints (tâches parentes), 38 tâches. Table ClickUp → issues GitHub validée. Importeur écrit, 8 tests face à un faux Plane. Pas encore lancé sur Plane. |
 | 2026-11-02 | Sauvegardes Plane et n8n faites. Import dans un projet jetable : OK. Ajout des tickets parents (phases, sprints) et des dates du sprint, à la demande de l'utilisateur. |
 | 2026-11-03 | Relance sur le projet jetable : tickets parents et dates validés par l'utilisateur. Import réel pas encore lancé. |
+| 2026-11-06 | Issues et tickets de test (`Frontend#47`, `Frontend#49`, `Backend#35`) supprimés par l'utilisateur. |
 | 2026-10-31 | 1ʳᵉ sauvegarde Plane rapatriée (chiffrée). Test de restauration réussi : données identiques (2 utilisateurs, 1 projet, 7 tickets). Aucun fichier joint à ce moment-là. |
 
 ## Bugs corrigés en route

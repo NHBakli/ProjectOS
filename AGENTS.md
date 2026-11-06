@@ -79,7 +79,8 @@ Contraintes de Plane v1.4.2 trouvées dans le code (à respecter dans l'import) 
    **Étape 0 finie (2026-11-06) : historique ClickUp importé dans Plane** → `docs/07-import-clickup.md`.
    Les projets GitHub de Flowly-PBS ont déjà les champs `Status`, `Estimate`, `Start date`, `Target date` (projet 1 : `Iteration` au lieu des dates). Aucun modèle d'issue (`.github/ISSUE_TEMPLATE`) dans les dépôts.
    **Choix du 2026-11-06** : cartes = Plane + GitHub croisés (toutes les tâches finissent dans GitHub), workflow n8n laissé actif, fiches stories par modèle d'issue GitHub, période choisie au lancement (dates ou sprints). Détail : `docs/plan-pld.md`.
-   **Ensuite** : date de la prochaine remise, liste des membres, puis l'étape 1 (squelette). Les tickets parents (phases, sprints) ne comptent pas comme des cartes.
+   **Prochaine remise : 2026-12-02.** Membres : pseudos lus dans GitHub, l'utilisateur donne les prénoms/noms → `pld.yml` (`pld.membres`), jamais dans ce dépôt.
+   **Ensuite** : l'étape 1 (squelette). Les tickets parents (phases, sprints) ne comptent pas comme des cartes.
 2. **Sauvegardes** : copie hors du poste (disque externe ou cloud), puis automatisation. Le datastore K3s n'est pas encore sauvegardé.
 3. **Vrai domaine** (ou DuckDNS) avant d'inviter l'équipe. Il faudra changer les URL de Plane, n8n et des webhooks.
 4. Plus tard : observabilité légère, CI de déploiement, GitOps seulement quand les restaurations sont fiables. n8n signale que le mode « task runner interne » sera retiré : passer en runners externes lors d'une mise à jour.

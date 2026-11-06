@@ -179,8 +179,8 @@ Chaque étape se termine par un test qui passe.
 | Cartes des anciennes sprints | Tranché : reprises depuis ClickUp, avec un lien vers leur issue GitHub quand elle existe (aucune issue recréée). Les tickets parents (phases, sprints) ne sont pas des cartes. La vraie date de fin est dans la description (« Terminé le : »). |
 | Cartes futures | Tranché (2026-11-06) : lues dans GitHub, croisées avec Plane. Voir « Choix faits » et « Règles de croisement ». |
 | ID des cartes | Identifiant Plane (`FLOWL-12`) si la carte vient de Plane, sinon `Frontend#40`. Le modèle Excel utilise `1.1`, `1.2`… : on peut l'afficher en plus. |
-| Date de la prochaine remise | À me donner : elle sert de période par défaut (on peut toujours la choisir au lancement). |
-| Liste des membres | Nom complet, compte Plane, compte GitHub (le brouillon du Sprint 1 en donne une partie). |
+| Date de la prochaine remise | Tranché : **2026-12-02** (dans `pld.yml`, `pld.remise_suivante`). Fin de période par défaut ; on peut toujours la choisir au lancement. |
+| Liste des membres | Pseudos lus dans GitHub (membres de l'organisation, contributeurs), prénoms et noms donnés par l'utilisateur. Rangés dans `pld.yml` (`pld.membres`), **jamais dans ce dépôt**. Le PLD affiche les vrais noms. |
 | Textes libres | Reprendre ceux du brouillon du Sprint 1 (résumé, schéma fonctionnel, plan alpha/bêta) dans `pld.yml`. |
 | Modèle Word trop complexe à remplir proprement | Repli : générer un document neuf qui reprend ses styles et sa structure. On décide après l'étape 6. |
 

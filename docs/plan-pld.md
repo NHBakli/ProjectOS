@@ -1,14 +1,17 @@
 # Plan : générer le PLD depuis Plane et GitHub
 
-Statut : **plan validé, à implémenter**. Rédigé le 2026-11-01.
+Statut : **plan validé, à implémenter**. Rédigé le 2026-11-01, revu le 2026-11-06 (cartes lues aussi dans GitHub).
 
 ## Objectif
 
 Une commande produit le PLD Epitech d'une période, prêt à relire :
 
 ```bash
-./scripts/generer-pld.sh 2
+./scripts/generer-pld.sh 2 --du 2026-10-02 --au 2026-11-20
+./scripts/generer-pld.sh 2 --sprints "Sprint N°2" "Sprint N°3"
 ```
+
+Tu choisis la période : soit des dates (`--du`, `--au`), soit les sprints à inclure (`--sprints`).
 
 | Fichier produit | Rôle |
 |---|---|
@@ -28,7 +31,10 @@ Tu relis, tu corriges dans Plane si besoin, tu relances, puis tu déposes dans l
 | Période | Un PLD = entre deux remises (Keynote 2 → Follow-up 1…). Les sprints Scrum de 2 semaines = cycles Plane. |
 | Historique ClickUp | Repris dans Plane par l'API : chaque phase/sprint = un ticket parent (ses sous-tickets) **et** un cycle. Guide : [07-import-clickup.md](07-import-clickup.md). |
 
-> ⚠️ **À revoir (2026-11-02)** : l'utilisateur créera les prochaines tâches **directement dans GitHub**, plus dans Plane. Plane garde l'historique ; les backlogs GitHub disent qui a fait quoi et ce qui est fini. À trancher avant l'étape 1 : source de vérité des cartes, où mettre les estimations et les fiches stories, sens du workflow n8n (Plane → GitHub aujourd'hui).
+| Source des cartes (2026-11-06) | **Plane + GitHub, croisés.** Toutes les tâches finissent dans GitHub (créées à la main ou par n8n). Une carte = un ticket Plane (avec ses issues GitHub liées), ou une issue GitHub qu'aucun ticket Plane ne cite. |
+| Workflow n8n Plane → GitHub | Laissé actif tel quel. |
+| Fiches stories (nouvelles cartes) | Modèle d'issue GitHub avec les rubriques (En tant que, Je veux, Afin de, Definition of Done, Points bloquants). |
+| Choix de la période | Au lancement : dates de début et de fin, **ou** liste des sprints à inclure. |
 
 ## Ce qu'exige Epitech (`Processus_PLD.pdf`)
 
@@ -41,17 +47,29 @@ Tu relis, tu corriges dans Plane si besoin, tu relances, puis tu déposes dans l
 
 ## D'où vient chaque information
 
+Champs déjà présents dans les projets GitHub de Flowly-PBS (vérifié le 2026-11-06) : `Status`, `Assignees`, `Estimate`, `Start date`, `Target date` (projet 1 « Flowly team back » : `Iteration` à la place des dates). Les dépôts n'ont pas encore de modèle d'issue.
+
+Règles de croisement :
+
+1. Ticket Plane avec lien(s) GitHub → **une** carte. Plane donne le sprint (cycle), GitHub donne le responsable, le statut réel et les preuves.
+2. Issue GitHub citée par aucun ticket Plane → carte à part, lue dans les projets GitHub.
+3. Ticket Plane sans lien GitHub (ex. Phase 2 et 3 : documents) → carte Plane seule.
+4. Une issue citée par deux tickets (ex. `Backend#4`, `Backend#5`) → comptée une fois dans les preuves, signalée dans le rapport.
+5. Tickets parents (phases, sprints) : pas des cartes.
+
+Sprint d'une carte : cycle Plane, sinon champ `Iteration` du projet GitHub, sinon dates (`Start date`/`Target date`, sinon date de clôture de l'issue).
+
 | Dans le PLD | Plane | GitHub (croisement) |
 |---|---|---|
 | ID de la carte | Identifiant du ticket (ex. `FLOW-12`) | — |
 | Titre | Titre du ticket | — |
 | Responsable | 1ᵉʳ assigné (les autres cités) | Assignés et auteurs des PR, pour contrôle |
 | Domaine | Étiquette `Frontend` / `Backend` / `Mobile` / `DevOps` | Dépôt de l'issue |
-| Charge (jours) | Estimation (points = jours) | — |
-| Début / fin prévus | `start_date` / `target_date` | — |
+| Charge (jours) | Estimation (points = jours) | Champ `Estimate` du projet (en jours) |
+| Début / fin prévus | `start_date` / `target_date` | Champs `Start date` / `Target date` |
 | Statut | État Plane (groupe : backlog, à faire, en cours, terminé, annulé) | Issue ouverte/fermée |
 | Avancement % | Déduit de l'état (tableau en config) | — |
-| En tant que / Je veux / Afin de / DoD | Rubriques de la description | — |
+| En tant que / Je veux / Afin de / DoD | Rubriques de la description | Rubriques du corps de l'issue (modèle d'issue) |
 | Preuve de livraison | — | PR fusionnée qui ferme l'issue (lien, date, auteur) |
 | Date réelle de fin | `completed_at` | Date de fusion de la PR |
 | Points bloquants | Étiquette `Bloqué` + rubrique « Points bloquants » | PR ouverte depuis longtemps |
@@ -72,8 +90,17 @@ Chaque contrôle vise un critère de la note.
 | Terminé dans Plane, mais issue GitHub ouverte ou aucune PR fusionnée | Réel vs planifié |
 | Issue fermée ou PR fusionnée, mais ticket pas terminé dans Plane | Réel vs planifié |
 | Date de fin prévue dépassée, carte non terminée | Réel vs planifié |
-| PR fusionnée sur la période sans carte Plane liée | Complétude |
+| PR fusionnée sur la période sans carte (ni ticket Plane, ni issue de projet) | Complétude |
+| Issue GitHub sans `Estimate`, sans dates ou sans rubriques de story | Qualité des cartes |
 | Responsable Plane ≠ auteur de la PR | Information (pas une erreur) |
+
+## Conventions dans GitHub (nouvelles cartes)
+
+1. Chaque issue est dans le projet GitHub de son équipe (auto-add déjà en place).
+2. Champ `Estimate` = charge en jours (`0.5` à `4`).
+3. `Start date` / `Target date` remplis (projet 1 : `Iteration`).
+4. Le 1ᵉʳ assigné est le responsable.
+5. Corps de l'issue créé avec le modèle d'issue (rubriques de la fiche story). Modèle à écrire à l'étape 1.
 
 ## Conventions à mettre en place dans Plane (avant la 1ʳᵉ génération)
 
@@ -105,8 +132,8 @@ Points bloquants : aucun
 |---|---|
 | `pld/generer_pld.py` | Point d'entrée : lit la config, appelle les étapes |
 | `pld/source_plane.py` | Lecture **seule** de l'API Plane : projet, états, étiquettes, estimations, cycles, membres, tickets, liens |
-| `pld/source_github.py` | Lecture **seule** de GitHub (GraphQL) : issues liées, PR qui les ferment, PR fusionnées de la période |
-| `pld/analyse.py` | Croisement, calculs (charges, avancement), contrôles |
+| `pld/source_github.py` | Lecture **seule** de GitHub (GraphQL) : issues des projets et leurs champs, issues liées, PR qui les ferment, PR fusionnées de la période |
+| `pld/analyse.py` | Croisement Plane ↔ GitHub, filtre de période, calculs (charges, avancement), contrôles |
 | `pld/sortie_xlsx.py` | Remplit le classeur officiel |
 | `pld/sortie_docx.py` | Remplit le modèle Word officiel |
 | `pld/pld.example.yml` | Exemple de config, sans donnée réelle |
@@ -137,7 +164,7 @@ Accès :
 Chaque étape se termine par un test qui passe.
 
 0. **Reprise ClickUp** : extraction ✅, correspondances ✅, importeur ✅ (`pld/clickup_importer.py`), essai dans un projet jetable ✅, import réel ✅ (2026-11-06) → [07-import-clickup.md](07-import-clickup.md).
-1. **Squelette** : dossier `pld/`, config d'exemple, `generer-pld.sh`, dépendances épinglées. Test : `--aide` s'affiche.
+1. **Squelette** : dossier `pld/`, config d'exemple, `generer-pld.sh` (options `--du`/`--au`/`--sprints`), dépendances épinglées, modèle d'issue GitHub. Test : `--aide` s'affiche.
 2. **Lecture Plane** + fausses données. Test local. Puis tu lances `--extraire` (lecture seule, JSON sans secret) sur le vrai Plane.
 3. **Lecture GitHub** + croisement. Test sur les vraies issues (lecture seule, depuis mon poste).
 4. **Contrôles** + `rapport-coherence.md`. Test : chaque contrôle a un cas qui le déclenche.
@@ -150,9 +177,9 @@ Chaque étape se termine par un test qui passe.
 | Question | Proposition |
 |---|---|
 | Cartes des anciennes sprints | Tranché : reprises depuis ClickUp, avec un lien vers leur issue GitHub quand elle existe (aucune issue recréée). Les tickets parents (phases, sprints) ne sont pas des cartes. La vraie date de fin est dans la description (« Terminé le : »). |
-| Cartes futures | **Nouveau** : créées dans GitHub. Voir l'encadré « À revoir » plus haut. |
-| ID des cartes | Identifiant Plane (`FLOWL-12`) : unique et retrouvable. Le modèle Excel utilise `1.1`, `1.2`… : on peut l'afficher en plus. |
-| Date de la prochaine remise | À me donner : elle fixe la période du Sprint 2. |
+| Cartes futures | Tranché (2026-11-06) : lues dans GitHub, croisées avec Plane. Voir « Choix faits » et « Règles de croisement ». |
+| ID des cartes | Identifiant Plane (`FLOWL-12`) si la carte vient de Plane, sinon `Frontend#40`. Le modèle Excel utilise `1.1`, `1.2`… : on peut l'afficher en plus. |
+| Date de la prochaine remise | À me donner : elle sert de période par défaut (on peut toujours la choisir au lancement). |
 | Liste des membres | Nom complet, compte Plane, compte GitHub (le brouillon du Sprint 1 en donne une partie). |
 | Textes libres | Reprendre ceux du brouillon du Sprint 1 (résumé, schéma fonctionnel, plan alpha/bêta) dans `pld.yml`. |
 | Modèle Word trop complexe à remplir proprement | Repli : générer un document neuf qui reprend ses styles et sa structure. On décide après l'étape 6. |
